@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Defines a record that stores an email that was sent via {@link BetterEmail}
+ * Defines a record that stores an email that was sent via {@link BetterEmail} 
  *
  * @property string $To
  * @property string $From
@@ -92,7 +92,7 @@ class SentEmail extends DataObject
 
     /**
      * Gets the {@link Permamail} object that was used to send this email
-     * @return Permamail
+     * @return Email
      */
     public function getEmail()
     {

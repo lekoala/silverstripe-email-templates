@@ -3,6 +3,16 @@ SilverStripe Email Templates module
 
 This module lets you have user editable email templates through the backoffice.
 
+WARNING : some features are still being actively developped since this module has
+been adapted from my mandrill module.
+
+Features
+==================
+
+TODO
+
+- Compatible with Fluent and Subsite
+
 Predefined templates
 ==================
 
@@ -51,6 +61,37 @@ $email = EmailTemplate::getEmailByCode('template-code');
 $email->setToMember('to@email.com');
 $email->send();
 ```
+
+Extra models
+==================
+
+TODO
+
+Sent emails
+==================
+
+TODO
+
+Finding a good template
+==================
+
+I highly recommend the following [open source email templates from sendwithus](https://www.sendwithus.com/resources/templates)
+
+The one provided with this module is "Oxygen" but you can easily adapt the template
+to your needs.
+
+Not happy?
+==================
+
+You might be interessted by [Permamail from unclecheese](https://github.com/unclecheese/silverstripe-permamail)
+
+Sending emails?
+==================
+
+Check my modules
+
+- [Mandrill](https://github.com/lekoala/silverstripe-mandrill)
+- [Sparkpost](https://github.com/lekoala/silverstripe-sparkpost)
 
 Compatibility
 ==================
