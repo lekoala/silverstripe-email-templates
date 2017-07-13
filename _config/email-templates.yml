@@ -1,0 +1,32 @@
+---
+Name: email-templates
+After:
+  - 'framework/*'
+  - 'cms/*'
+---
+SiteConfig:
+  extensions:
+    - EmailTemplateSiteConfigExtension
+EmailTemplate:
+  template: 'DefaultEmailTemplate'
+  base_color: '#ff6f6f'
+  show_facebook: true
+  show_twitter: true
+  show_rss: false
+EmailImportTask:
+  # Modules to be ignored during email collection
+  ignored_modules: ['email-templates','cms','framework']
+---
+Only:
+  classexists: 'Fluent'
+---
+EmailTemplate:
+  extensions:
+    - FluentExtension
+---
+Only:
+  classexists: 'Subsite'
+---
+EmailTemplate:
+  extensions:
+    - EmailTemplateSubsiteExtension

@@ -1,0 +1,27 @@
+{
+    "name": "lekoala/silverstripe-email-templates",
+    "description": "Adds email-templates in the SilverStripe CMS",
+    "type": "silverstripe-module",
+    "keywords": [
+        "silverstripe",
+        "email-templates",
+        "module",
+        "cms"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "LeKoala",
+            "email": "thomas@lekoala.be"
+        }
+    ],
+    "require": {
+        "silverstripe/framework": "~3.2"
+    },
+    "extra": {
+        "installer-name": "email-templates"
+    },
+    "support": {
+        "issues": "https://github.com/lekoala/silverstripe-email-templates/issues"
+    }
+}
