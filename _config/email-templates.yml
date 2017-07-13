@@ -13,6 +13,7 @@ EmailTemplate:
   show_facebook: true
   show_twitter: true
   show_rss: false
+  helper_show_methods: false
 EmailImportTask:
   # Modules to be ignored during email collection
   ignored_modules: ['email-templates','cms','framework']

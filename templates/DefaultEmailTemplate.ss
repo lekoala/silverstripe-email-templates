@@ -124,6 +124,16 @@
                 padding: 45px 75px;
             }
 
+            .mini-container-left {
+                width: 278px;
+                padding: 10px 0 10px 15px;
+            }
+
+            .mini-container-right {
+                width: 278px;
+                padding: 10px 14px 10px 15px;
+            }
+
             .block-rounded {
                 width: 260px;
             }
@@ -294,6 +304,13 @@
                     display: block !important;
                     padding-bottom: 20px;
                 }
+
+                td[class="mini-container-left"],
+                td[class="mini-container-right"] {
+                    padding: 0 15px 15px !important;
+                    display: block !important;
+                    width: 290px !important;
+                }
             }
         </style>
     </head>
@@ -364,8 +381,58 @@
                                     $Body
                                 </td>
                             </tr>
+                            <% if Button %>
+                            <tr>
+                                <td class="button">
+                                    <div><!--[if mso]>
+<v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="$Button.Link" style="height:45px;v-text-anchor:middle;width:155px;" arcsize="15%" strokecolor="#ffffff" fillcolor="$SiteConfig.EmailBaseColor">
+<w:anchorlock/>
+<center style="color:#ffffff;font-family:Helvetica, Arial, sans-serif;font-size:14px;font-weight:regular;">$Button.Title</center>
+</v:roundrect><![endif]--><a href="$Button.Link" style="background-color:$SiteConfig.EmailBaseColor;border-radius:5px;color:#ffffff;display:inline-block;font-family:'Cabin', Helvetica, Arial, sans-serif;font-size:14px;font-weight:regular;line-height:45px;text-align:center;text-decoration:none;width:155px;-webkit-text-size-adjust:none;mso-hide:all;">$Button.Title</a>
+                                    </div>
+                                </td>
+                            </tr>
+                            <% end_if %>
                             <% if Callout %>
                             <tr>
+                                <% if SideBar %>
+                                <td class="w320">
+                                    <table cellpadding="0" cellspacing="0" width="100%">
+                                        <tr>
+                                            <td class="mini-container-left">
+                                                <table cellpadding="0" cellspacing="0" width="100%">
+                                                    <tr>
+                                                        <td class="mini-block-padding">
+                                                            <table cellspacing="0" cellpadding="0" width="100%" style="border-collapse:separate !important;">
+                                                                <tr>
+                                                                    <td class="mini-block">
+                                                                        $Callout
+                                                                    </td>
+                                                                </tr>
+                                                            </table>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                            <td class="mini-container-right">
+                                                <table cellpadding="0" cellspacing="0" width="100%">
+                                                    <tr>
+                                                        <td class="mini-block-padding">
+                                                            <table cellspacing="0" cellpadding="0" width="100%" style="border-collapse:separate !important;">
+                                                                <tr>
+                                                                    <td class="mini-block">
+                                                                        $SideBar
+                                                                    </td>
+                                                                </tr>
+                                                            </table>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                                <% else %>
                                 <td class="mini-block-container">
                                     <table cellspacing="0" cellpadding="0" width="100%"  style="border-collapse:separate !important;">
                                         <tr>
@@ -378,14 +445,14 @@
                                                             </table>
                                                         </td>
                                                     </tr>
-                                                    <% if Button %>
+                                                    <% if CalloutButton %>
                                                     <tr>
                                                         <td class="button">
                                                             <div><!--[if mso]>
-<v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="$Button.Link" style="height:45px;v-text-anchor:middle;width:155px;" arcsize="15%" strokecolor="#ffffff" fillcolor="$SiteConfig.EmailBaseColor">
+<v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="$CalloutButton.Link" style="height:45px;v-text-anchor:middle;width:155px;" arcsize="15%" strokecolor="#ffffff" fillcolor="$SiteConfig.EmailBaseColor">
 <w:anchorlock/>
-    <center style="color:#ffffff;font-family:Helvetica, Arial, sans-serif;font-size:14px;font-weight:regular;">$Button.Title</center>
-  </v:roundrect><![endif]--><a href="$Button.Link" style="background-color:$SiteConfig.EmailBaseColor;border-radius:5px;color:#ffffff;display:inline-block;font-family:'Cabin', Helvetica, Arial, sans-serif;font-size:14px;font-weight:regular;line-height:45px;text-align:center;text-decoration:none;width:155px;-webkit-text-size-adjust:none;mso-hide:all;">$Button.Title</a>
+    <center style="color:#ffffff;font-family:Helvetica, Arial, sans-serif;font-size:14px;font-weight:regular;">$CalloutButton.Title</center>
+  </v:roundrect><![endif]--><a href="$CalloutButton.Link" style="background-color:$SiteConfig.EmailBaseColor;border-radius:5px;color:#ffffff;display:inline-block;font-family:'Cabin', Helvetica, Arial, sans-serif;font-size:14px;font-weight:regular;line-height:45px;text-align:center;text-decoration:none;width:155px;-webkit-text-size-adjust:none;mso-hide:all;">$CalloutButton.Title</a>
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -395,6 +462,7 @@
                                         </tr>
                                     </table>
                                 </td>
+                                <% end_if %>
                             </tr>
                             <% end_if %>
                         </table>

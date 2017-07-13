@@ -243,22 +243,39 @@ class EmailTemplate extends DataObject
             $modelsByClass[$model][] = $name;
         }
         $classes = array_unique($classes);
+
+        $locales = array();
+        if (class_exists('Fluent')) {
+            $locales = Fluent::locales();
+        }
+
         foreach ($classes as $model) {
             if (!class_exists($model)) {
                 continue;
             }
             $props = Config::inst()->get($model, 'db');
             $o = singleton($model);
-            $methods = array_diff($o->allMethodNames(true), $o->allMethodNames());
             $content .= '<strong>' . $model . ' (' . implode(',', $modelsByClass[$model]) . ') :</strong><br/>';
             foreach ($props as $fieldName => $fieldType) {
+                // Filter out locale fields
+                foreach ($locales as $locale) {
+                    if (strpos($fieldName, $locale) !== false) {
+                        continue;
+                    }
+                }
                 $content .= $fieldName . ', ';
             }
-            foreach ($methods as $method) {
-                if (strpos($method, 'get') === 0) {
-                    $content .= $method . ', ';
+
+            // We could also show methods but that may be long
+            if (self::config()->helper_show_methods) {
+                $methods = array_diff($o->allMethodNames(true), $o->allMethodNames());
+                foreach ($methods as $method) {
+                    if (strpos($method, 'get') === 0) {
+                        $content .= $method . ', ';
+                    }
                 }
             }
+
             $content = trim($content, ', ') . '<br/>';
         }
         $content .= "<div class='message info'>" . _t('EmailTemplate.ENCLOSEFIELD', 'To escape a field from surrounding text, you can enclose it between brackets, eg: {$CurrentMember.FirstName}.') . '</div>';
@@ -348,7 +365,7 @@ class EmailTemplate extends DataObject
         if ($injectFake) {
             $this->setPreviewData($email);
         }
-        
+
         $debug = $email->debug();
 
         // Actual email content is after the first </p>
