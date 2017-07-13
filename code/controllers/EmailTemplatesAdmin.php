@@ -10,6 +10,7 @@ class EmailTemplatesAdmin extends ModelAdmin
 
     private static $managed_models = array(
         'EmailTemplate',
+        'SentEmail',
     );
     private static $url_segment = 'emails';
     private static $menu_title = 'Emails';
@@ -18,7 +19,8 @@ class EmailTemplatesAdmin extends ModelAdmin
         'ImportForm',
         'SearchForm',
         'PreviewEmail',
-        'doSendTestEmail'
+        'ViewSentEmail',
+        'doSendTestEmail',
     );
 
     public function subsiteCMSShowInMenu()
@@ -56,26 +58,55 @@ class EmailTemplatesAdmin extends ModelAdmin
 
         $html = $emailTemplate->renderTemplate(true, true);
 
+        Requirements::restore();
+
+        return $html;
+    }
+
+    public function ViewSentEmail()
+    {
+        // Prevent CMS styles to interfere with preview
+        Requirements::clear();
+
+        $id = (int) $this->getRequest()->getVar('id');
+
+        /* @var $SentEmail SentEmail */
+        $SentEmail = SentEmail::get()->byID($id);
+
+        $html = $SentEmail->Body;
+
+        Requirements::restore();
+
         return $html;
     }
 
     public function doSendTestEmail()
     {
-        $template = EmailTemplate::get()->byID(filter_input(INPUT_POST, 'EmailTemplateID'));
-        if (!$template) {
+        $request = $this->getRequest();
+
+        $id = (int) $request->requestVar('EmailTemplateID');
+        if (!$id) {
+            throw new Exception('Please define EmailTemplateID parameter');
+        }
+
+        $EmailTemplate = EmailTemplate::get()->byID($id);
+        if (!$EmailTemplate) {
             throw new Exception("Template is not found");
         }
-        $emailAddr = $this->getRequest()->postVar('SendTestEmail');
+        $SendTestEmail = $request->requestVar('SendTestEmail');
 
-        $email = $template->getEmail();
-        $email->setSampleRequiredObjects();
-        $email->setTo($emailAddr);
+        if (!SendTestEmail) {
+            throw new Exception('Please define SendTestEmail parameter');
+        }
+
+        $email = $EmailTemplate->getEmail();
+        $email->setTo($SendTestEmail);
 
         $res = $email->send();
 
         if ($res) {
-            return 'Test email sent to ' . $emailAddr;
+            return 'Test email sent to ' . $SendTestEmail;
         }
-        return 'Failed to send test to ' . $emailAddr;
+        return 'Failed to send test to ' . $SendTestEmail;
     }
 }

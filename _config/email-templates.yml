@@ -8,15 +8,27 @@ SiteConfig:
   extensions:
     - EmailTemplateSiteConfigExtension
 EmailTemplate:
-  template: 'DefaultEmailTemplate'
-  base_color: '#ff6f6f'
-  show_facebook: true
-  show_twitter: true
-  show_rss: false
   helper_show_methods: false
 EmailImportTask:
-  # Modules to be ignored during email collection
-  ignored_modules: ['email-templates','cms','framework']
+  ignored_modules: ['cms','framework']
+BetterEmail:
+  max_records: 1000
+  # time or max
+  cleanup_method: 'max'
+  cleanup_time: '-7 days'
+  template: 'DefaultEmailTemplate'
+  template_options:
+    base_color: '#ff6f6f'
+    show_facebook: true
+    show_twitter: true
+    show_rss: false
+Injector:
+  Email:
+    class: BetterEmail
+  Member_ForgotPasswordEmail:
+    class: Email
+  Member_ChangePasswordEmail:
+    class: Email
 ---
 Only:
   classexists: 'Fluent'
@@ -30,4 +42,7 @@ Only:
 ---
 EmailTemplate:
   extensions:
-    - EmailTemplateSubsiteExtension
+    - EmailSubsiteExtension
+SentEmail:
+  extensions:
+    - EmailSubsiteExtension

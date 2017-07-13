@@ -376,6 +376,13 @@
                                     $Subject
                                 </td>
                             </tr>
+                            <% if SideBar %>
+                            <tr>
+                                <td class="free-text">
+                                    $SideBar
+                                </td>
+                            </tr>
+                            <% end_if %>
                             <tr>
                                 <td class="free-text">
                                     $Body
@@ -395,44 +402,6 @@
                             <% end_if %>
                             <% if Callout %>
                             <tr>
-                                <% if SideBar %>
-                                <td class="w320">
-                                    <table cellpadding="0" cellspacing="0" width="100%">
-                                        <tr>
-                                            <td class="mini-container-left">
-                                                <table cellpadding="0" cellspacing="0" width="100%">
-                                                    <tr>
-                                                        <td class="mini-block-padding">
-                                                            <table cellspacing="0" cellpadding="0" width="100%" style="border-collapse:separate !important;">
-                                                                <tr>
-                                                                    <td class="mini-block">
-                                                                        $Callout
-                                                                    </td>
-                                                                </tr>
-                                                            </table>
-                                                        </td>
-                                                    </tr>
-                                                </table>
-                                            </td>
-                                            <td class="mini-container-right">
-                                                <table cellpadding="0" cellspacing="0" width="100%">
-                                                    <tr>
-                                                        <td class="mini-block-padding">
-                                                            <table cellspacing="0" cellpadding="0" width="100%" style="border-collapse:separate !important;">
-                                                                <tr>
-                                                                    <td class="mini-block">
-                                                                        $SideBar
-                                                                    </td>
-                                                                </tr>
-                                                            </table>
-                                                        </td>
-                                                    </tr>
-                                                </table>
-                                            </td>
-                                        </tr>
-                                    </table>
-                                </td>
-                                <% else %>
                                 <td class="mini-block-container">
                                     <table cellspacing="0" cellpadding="0" width="100%"  style="border-collapse:separate !important;">
                                         <tr>
@@ -462,7 +431,6 @@
                                         </tr>
                                     </table>
                                 </td>
-                                <% end_if %>
                             </tr>
                             <% end_if %>
                         </table>

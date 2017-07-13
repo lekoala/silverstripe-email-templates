@@ -4,6 +4,8 @@
  * EmailTemplate
  *
  * @property string $Title
+ * @property string $DefaultSender
+ * @property string $DefaultRecipient
  * @property string $Category
  * @property string $Code
  * @property string $Content
@@ -18,6 +20,8 @@ class EmailTemplate extends DataObject
 
     private static $db = array(
         'Title' => 'Varchar(255)',
+        'DefaultSender' => 'Varchar(255)',
+        'DefaultRecipient' => 'Varchar(255)',
         'Category' => 'Varchar(255)',
         'Code' => 'Varchar(255)',
         // Content
@@ -99,9 +103,7 @@ class EmailTemplate extends DataObject
     }
 
     /**
-     * Base models always available
-     *
-     * These models are defined in MandrillEmail::templateData()
+     * Base models always available in the controller
      *
      * @return array
      */
@@ -109,9 +111,7 @@ class EmailTemplate extends DataObject
     {
         return array(
             'CurrentMember' => 'Member',
-            'Recipient' => 'Member',
-            'Sender' => 'Member',
-            'CurrentSiteConfig' => 'SiteConfig'
+            'SiteConfig' => 'SiteConfig'
         );
     }
 
@@ -136,6 +136,13 @@ class EmailTemplate extends DataObject
         return $arr;
     }
 
+    /**
+     * Define extra models on your template. Template helpers
+     * will be displayed accordingly and preview will
+     * pick these up
+     * 
+     * @param array $models Pairs of models (Name => Class)
+     */
     public function setExtraModelsAsArray($models)
     {
         $baseModels = array_keys($this->getBaseModels());
@@ -183,12 +190,13 @@ class EmailTemplate extends DataObject
                 })
                 ->first();
         }
-        // In dev mode, create a placeholder email
+        // Always return a template
         if (!$template) {
             $template = new EmailTemplate();
             $template->Title = $code;
             $template->Code = $code;
-            $template->Content = '';
+            $template->Content = 'Replace this with your own content and untick disabled';
+            $template->Disabled = true;
             $template->write();
         }
         return $template;
@@ -292,8 +300,8 @@ class EmailTemplate extends DataObject
         $tab = new Tab('Preview');
 
         // Preview iframe
-        $previewLink = '/admin/emails/EmailTemplate/PreviewEmail/?id=' . $this->ID;
-        $iframe = new LiteralField('iframe', '<iframe src="' . $previewLink . '" style="width:800px;background:#fff;border:1px solid #ccc;min-height:500px;vertical-align:top"></iframe>');
+        $iframeSrc = '/admin/emails/EmailTemplate/PreviewEmail/?id=' . $this->ID;
+        $iframe = new LiteralField('iframe', '<iframe src="' . $iframeSrc . '" style="width:800px;background:#fff;border:1px solid #ccc;min-height:500px;vertical-align:top"></iframe>');
         $tab->push($iframe);
 
         if (class_exists('CmsInlineFormAction')) {
@@ -314,33 +322,29 @@ class EmailTemplate extends DataObject
     /**
      * Returns an instance of an Email with the content of the template
      *
-     * @return Rmzil
+     * @return BetterEmail
      */
     public function getEmail()
     {
-        /* @var $email Email */
-        $email = Email::create();
+        /* @var $email BetterEmail */
+        $email = BetterEmail::create();
 
         if ($this->Title) {
             $email->setSubject($this->Title);
         }
 
-        $template = $this->config()->template;
-        if ($template) {
-            $email->setTemplate($template);
-        }
+        $email->setBody([
+            'Body' => $this->Content,
+            'Callout' => $this->Callout,
+            'SideBar' => $this->SideBar,
+        ]);
 
-        $email->setBody($this->Content);
-
-        $data = array();
-        if ($this->Callout) {
-            $data['Callout'] = $this->Callout;
+        if ($this->DefaultSender) {
+            $email->setFrom($this->DefaultSender);
         }
-        if ($this->SideBar) {
-            $data['SideBar'] = $this->SideBar;
+        if ($this->DefaultRecipient) {
+            $email->setTo($this->DefaultRecipient);
         }
-
-        $email->populateTemplate($data);
 
         // This should be supported by your email transport if you want it to work
         if ($this->Disabled) {
@@ -363,7 +367,7 @@ class EmailTemplate extends DataObject
 
         $email = $this->getEmail();
         if ($injectFake) {
-            $this->setPreviewData($email);
+            $email = $this->setPreviewData($email);
         }
 
         $debug = $email->debug();
@@ -375,24 +379,43 @@ class EmailTemplate extends DataObject
         return (string) $html;
     }
 
-    public function setPreviewData(Email $email)
+    /**
+     * Inject random data into email for nicer preview
+     *
+     * @param Email $email
+     * @return Email
+     */
+    public function setPreviewData(BetterEmail $email)
     {
         $data = array();
-//        foreach ($this->required_objects as $name => $class) {
-//            if (!class_exists($class)) {
-//                continue;
-//            }
-//            if (method_exists($class, 'getSampleRecord')) {
-//                $o = $class::getSampleRecord();
-//            } else {
-//                $o = $class::get()->sort('RAND()')->first();
-//            }
-//
-//            if (!$o) {
-//                $o = new $class;
-//            }
-//            $data[$name] = $o;
-//        }
-        $email->populateTemplate($data);
+
+        $body = $email->getOriginalBody();
+        foreach ($body as $k => $v) {
+            $matches = null;
+            preg_match_all('/\$([a-zA-Z]*)/', $v, $matches);
+            if ($matches && !empty($matches[1])) {
+                foreach ($matches[1] as $name) {
+                    $data[$name] = '{' . $name . '}';
+                }
+            }
+        }
+
+        foreach ($this->getAvailableModels() as $name => $class) {
+            if (!class_exists($class)) {
+                continue;
+            }
+            if (singleton($class)->hasMethod('getSampleRecord')) {
+                $o = $class::getSampleRecord();
+            } else {
+                $o = $class::get()->sort('RAND()')->first();
+            }
+
+            if (!$o) {
+                $o = new $class;
+            }
+            $data[$name] = $o;
+        }
+
+        return $email->populateTemplate($data);
     }
 }

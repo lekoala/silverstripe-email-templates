@@ -1,11 +1,11 @@
 <?php
 
 /**
- * Add subsites support to email tempaltes
+ * Add subsites support
  *
  * @author lekoala
  */
-class EmailTemplateSubsiteExtension extends DataExtension
+class EmailSubsiteExtension extends DataExtension
 {
 
     private static $has_one = array(
