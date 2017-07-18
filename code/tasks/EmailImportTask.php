@@ -288,7 +288,6 @@ class EmailImportTask extends BuildTask
             if (class_exists('Subsite') && Subsite::currentSubsiteID()) {
                 $emailTemplate->SubsiteID = Subsite::currentSubsiteID();
             }
-            $emailTemplate->setExtraModelsAsArray($extraModels);
             // Write to main site or current subsite
             $emailTemplate->write();
             $this->resetLastEditedDate($emailTemplate->ID);
