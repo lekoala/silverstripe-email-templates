@@ -247,21 +247,6 @@ class EmailImportTask extends BuildTask
                 $isOverwritten = true;
             }
 
-            // Scan for extra models based on convention
-            preg_match_all('/\$([a-zA-Z]+)\./ms', $contentLocale[$defaultLocale], $matches);
-            $extraModels = array();
-            if (!empty($matches) && !empty($matches[1])) {
-                $arr = array_unique($matches[1]);
-                foreach ($arr as $n) {
-                    if (strtolower($n) === 'siteconfig') {
-                        continue;
-                    }
-                    if (class_exists($n)) {
-                        $extraModels[$n] = $n;
-                    }
-                }
-            }
-
             // Apply content to email
             $this->assignContent($emailTemplate, $contentLocale[$defaultLocale]);
 

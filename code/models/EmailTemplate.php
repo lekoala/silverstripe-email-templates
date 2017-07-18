@@ -12,7 +12,6 @@
  * @property string $Callout
  * @property string $SideBar
  * @property boolean $Disabled
- * @property boolean $ExtraModels
  * @author lekoala
  */
 class EmailTemplate extends DataObject
@@ -30,7 +29,6 @@ class EmailTemplate extends DataObject
         'SideBar' => 'HTMLText',
         // Configuration
         'Disabled' => 'Boolean',
-        'ExtraModels' => 'Varchar(255)',
     );
     private static $summary_fields = array(
         'Title',
@@ -63,9 +61,6 @@ class EmailTemplate extends DataObject
             $objectsSource[$dataobject] = $dataobject;
         }
         asort($objectsSource);
-
-        // Do not make this editable
-        $fields->removeByName('ExtraModels');
 
         // Do not allow changing subsite
         $fields->removeByName('SubsiteID');
@@ -118,46 +113,35 @@ class EmailTemplate extends DataObject
     /**
      * A map of Name => Class
      *
+     * User models are variables with a . that should match an existing DataObject name
+     *
      * @return array
      */
-    public function getExtraModelsAsArray()
+    public function getUserModels()
     {
-        $extraModels = $this->ExtraModels ? json_decode($this->ExtraModels) : array();
-        $arr = array();
-        if (!$extraModels) {
-            return array();
-        }
-        foreach ($extraModels as $extraModel) {
-            if (!class_exists($extraModel->Model)) {
-                continue;
-            }
-            $arr[$extraModel->Name] = $extraModel->Model;
-        }
-        return $arr;
-    }
+        $fields = ['Content', 'Callout', 'SideBar'];
+        $fields = ['SideBar'];
 
-    /**
-     * Define extra models on your template. Template helpers
-     * will be displayed accordingly and preview will
-     * pick these up
-     * 
-     * @param array $models Pairs of models (Name => Class)
-     */
-    public function setExtraModelsAsArray($models)
-    {
-        $baseModels = array_keys($this->getBaseModels());
-        $val = array();
-        foreach ($models as $name => $class) {
-            // Ignore base models
-            if (in_array($name, $baseModels)) {
-                continue;
+        $models = [];
+        foreach ($fields as $field) {
+            preg_match_all('/\$([a-zA-Z]+)\./m', $this->$field, $matches);
+
+            if (!empty($matches) && !empty($matches[1])) {
+                $arr = array_unique($matches[1]);
+
+                foreach ($arr as $name) {
+                    if (!class_exists($name)) {
+                        continue;
+                    }
+                    $singl = singleton($name);
+                    if ($singl instanceof DataObject) {
+                        $models[$name] = $name;
+                    }
+                }
             }
-            $val[] = array(
-                'Name' => $name,
-                'Model' => $class
-            );
         }
-        $this->ExtraModels = json_encode($val);
+
+        return $models;
     }
 
     /**
@@ -167,9 +151,9 @@ class EmailTemplate extends DataObject
      */
     public function getAvailableModels()
     {
-        $extraModels = $this->getExtraModelsAsArray();
-        $arr = $this->getBaseModels();
-        return array_merge($arr, $extraModels);
+        $userModels = $this->getUserModels();
+        $baseModels = $this->getBaseModels();
+        return array_merge($baseModels, $userModels);
     }
 
     /**

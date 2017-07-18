@@ -62,10 +62,14 @@ $email->setToMember('to@email.com');
 $email->send();
 ```
 
-Extra models
+User models
 ==================
 
-TODO
+This module expect a simple convention when referencing models inside your templates. Please use the name of the class as the variable.
+For instance $Member will match an object of class Member.
+
+You can inject values with whatever name (MyMembe => Member) but it won't be visible inside the admin because
+the template doesn't which values are going to be injected.
 
 Sent emails
 ==================
