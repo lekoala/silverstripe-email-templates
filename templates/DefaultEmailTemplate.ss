@@ -42,15 +42,32 @@
             }
 
             a {
-                color: $SiteConfig.EmailBaseColor;
                 font-weight: bold;
                 text-decoration: none !important;
+                color: $SiteConfig.EmailBaseColor;
+            }
+
+            .btn {
+                display:block;
+                width:auto !important;
+                text-align:center;
+                color:#fff;
+                text-decoration: none;
+                margin:5px 0;
+                padding:5px;
+                border-radius:5px;
+                margin-bottom:10px;
+                background: $SiteConfig.EmailBaseColor;
+                border:1px solid  $SiteConfig.EmailBaseColor;
+            }
+            .btn:hover, .btn:active {
+                color:#fff !important;
+                background: $SiteConfig.EmailBaseColor !important;
             }
 
             .pull-left {
                 text-align: left;
             }
-
             .pull-right {
                 text-align: right;
             }
@@ -64,11 +81,9 @@
                 padding: 35px 0 0;
                 color: #4d4d4d;
             }
-
             .header-md {
                 font-size: 24px;
             }
-
             .header-sm {
                 padding: 5px 0;
                 font-size: 18px;
