@@ -190,7 +190,7 @@ class EmailTemplate extends DataObject
      * A shorthand to get an email by code
      *
      * @param string $code
-     * @return Email
+     * @return BetterEmail
      */
     public static function getEmailByCode($code)
     {

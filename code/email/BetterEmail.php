@@ -114,7 +114,7 @@ class BetterEmail extends Email
      */
     public function send($messageID = null)
     {
-        $this->doSend($messageID, false);
+        return $this->doSend($messageID, false);
     }
 
     /**
@@ -123,7 +123,7 @@ class BetterEmail extends Email
      */
     public function sendPlain($messageID = null)
     {
-        $this->doSend($messageID, true);
+        return $this->doSend($messageID, true);
     }
 
     /**
