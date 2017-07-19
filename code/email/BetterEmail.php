@@ -84,7 +84,6 @@ class BetterEmail extends Email
                 'CC' => $this->CC(),
                 'BCC' => $this->BCC(),
                 'Results' => json_encode($results),
-                'SerializedEmail' => serialize($this)
         ));
         $record->write();
 

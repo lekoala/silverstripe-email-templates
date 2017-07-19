@@ -24,7 +24,6 @@ class SentEmail extends DataObject
         'CC' => 'Text',
         'BCC' => 'Text',
         'Results' => 'Text',
-        'SerializedEmail' => 'Text'
     );
     private static $summary_fields = array(
         'Created.Nice' => 'Date',
@@ -91,16 +90,20 @@ class SentEmail extends DataObject
     }
 
     /**
-     * Gets the {@link Permamail} object that was used to send this email
+     * Gets the {@link BetterEmail} object that was used to send this email
      * @return Email
      */
     public function getEmail()
     {
-        if ($this->SerializedEmail) {
-            return unserialize($this->SerializedEmail);
-        }
+        $email = Email::create();
 
-        return false;
+        $email->setTo($this->To);
+        $email->setCc($this->CC);
+        $email->setBCC($this->BCC);
+        $email->setSubject($this->Subject);
+        $email->setBody($this->Body);
+
+        return $email;
     }
 
     /**
@@ -109,7 +112,12 @@ class SentEmail extends DataObject
     public function resend()
     {
         if ($e = $this->getEmail()) {
-            $e->send();
+            $results = $e->send();
+
+            // Update results
+            $this->Results = $results;
+            $this->write();
+
             return 'Sent';
         }
 
