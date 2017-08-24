@@ -16,6 +16,16 @@ class EmailTemplateSiteConfigExtension extends DataExtension
 
     public function updateCMSFields(FieldList $fields)
     {
+        // Disabled - don't show fields
+        if (!SiteConfig::config()->email_templates_update_fields) {
+            return $fields;
+        }
+
+        // Already defined
+        if ($fields->dataFieldByName('EmailFooter')) {
+            return $fields;
+        }
+
         $EmailFooter = new HtmlEditorField('EmailFooter', _t('EmailTemplateSiteConfigExtension.EmailFooter', 'Email Footer'));
         $EmailFooter->setRows(3);
         $fields->addFieldToTab('Root.Email', $EmailFooter);

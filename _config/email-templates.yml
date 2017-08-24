@@ -5,6 +5,7 @@ After:
   - 'cms/*'
 ---
 SiteConfig:
+  email_templates_update_fields: true
   extensions:
     - EmailTemplateSiteConfigExtension
 EmailTemplate:
