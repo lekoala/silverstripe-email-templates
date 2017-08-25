@@ -120,7 +120,6 @@ class EmailTemplate extends DataObject
     public function getUserModels()
     {
         $fields = ['Content', 'Callout', 'SideBar'];
-        $fields = ['SideBar'];
 
         $models = [];
         foreach ($fields as $field) {
@@ -214,15 +213,14 @@ class EmailTemplate extends DataObject
      */
     protected function mergeFieldsHelper()
     {
-        $content = '';
-
+        $content = '<strong>Base fields:</strong><br/>';
         $baseFields = array(
             'To', 'Cc', 'Bcc', 'From', 'Subject', 'Body', 'BaseURL', 'Controller'
         );
         foreach ($baseFields as $baseField) {
             $content .= $baseField . ', ';
         }
-        $content = trim($content, ', ') . '<br/><br/>';
+        $content = trim($content, ', ') . '<br/>';
 
         $models = $this->getAvailableModels();
         $modelsByClass = array();
@@ -247,7 +245,7 @@ class EmailTemplate extends DataObject
             }
             $props = Config::inst()->get($model, 'db');
             $o = singleton($model);
-            $content .= '<strong>' . $model . ' (' . implode(',', $modelsByClass[$model]) . ') :</strong><br/>';
+            $content .= '<strong>' . $model . ' (' . implode(',', $modelsByClass[$model]) . '):</strong><br/>';
             foreach ($props as $fieldName => $fieldType) {
                 // Filter out locale fields
                 foreach ($locales as $locale) {
@@ -270,7 +268,7 @@ class EmailTemplate extends DataObject
 
             $content = trim($content, ', ') . '<br/>';
         }
-        $content .= "<div class='message info'>" . _t('EmailTemplate.ENCLOSEFIELD', 'To escape a field from surrounding text, you can enclose it between brackets, eg: {$CurrentMember.FirstName}.') . '</div>';
+        $content .= "<div class='message info'>" . _t('EmailTemplate.ENCLOSEFIELD', 'To escape a field from surrounding text, you can enclose it between brackets, eg: {$Member.FirstName}.') . '</div>';
         return $content;
     }
 
