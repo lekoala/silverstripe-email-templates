@@ -333,15 +333,15 @@
     <body bgcolor="#f7f7f7">
         <table align="center" cellpadding="0" cellspacing="0" class="container-for-gmail-android" width="100%">
             <tr>
-                <td align="left" valign="top" width="100%" style="background:repeat-x url($BaseHref/email-templates/images/email/bg-top.jpg) #ffffff;">
+                <td align="left" valign="top" width="100%" style="background:repeat-x url({$BaseHref}email-templates/images/email/bg-top.jpg) #ffffff;">
                     <center>
-                        <img src="email-templates/images/email/transparent.png" class="force-width-gmail">
-                            <table cellspacing="0" cellpadding="0" width="100%" bgcolor="#ffffff" background="$BaseHref/email-templates/images/email/bg-top.jpg" style="background-color:transparent">
+                        <img src="{$BaseHref}email-templates/images/email/transparent.png" class="force-width-gmail">
+                            <table cellspacing="0" cellpadding="0" width="100%" bgcolor="#ffffff" background="{$BaseHref}email-templates/images/email/bg-top.jpg" style="background-color:transparent">
                                 <tr>
                                     <td width="100%" height="80" valign="top" style="text-align: center; vertical-align:middle;">
                                         <!--[if gte mso 9]>
                                         <v:rect xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false" style="mso-width-percent:1000;height:80px; v-text-anchor:middle;">
-                                          <v:fill type="tile" src="$BaseHref/email-templates/images/email/bg-top.jpg" color="#ffffff" />
+                                          <v:fill type="tile" src="{$BaseHref}email-templates/images/email/bg-top.jpg" color="#ffffff" />
                                           <v:textbox inset="0,0,0,0">
                                         <![endif]-->
                                         <center>
@@ -360,13 +360,13 @@
                                                     </td>
                                                     <td class="pull-right mobile-header-padding-right" style="color: #4d4d4d;">
                                                         <% if $SiteConfig.EmailTwitterLink %>
-                                                        <a href="$SiteConfig.EmailTwitterLink"><img width="44" height="47" src="$BaseHref/email-templates/images/email/twitter.gif" alt="twitter" /></a>
+                                                        <a href="$SiteConfig.EmailTwitterLink"><img width="44" height="47" src="{$BaseHref}email-templates/images/email/twitter.gif" alt="twitter" /></a>
                                                         <% end_if %>
                                                         <% if $SiteConfig.EmailFacebookLink %>
-                                                        <a href=" $SiteConfig.EmailFacebookLink "><img width="38" height="47" src="$BaseHref/email-templates/images/email/facebook.gif" alt="facebook" /></a>
+                                                        <a href=" $SiteConfig.EmailFacebookLink "><img width="38" height="47" src="{$BaseHref}email-templates/images/email/facebook.gif" alt="facebook" /></a>
                                                         <% end_if %>
                                                         <% if $SiteConfig.EmailRssLink %>
-                                                        <a href="$SiteConfig.EmailRssLink"><img width="40" height="47" src="$BaseHref/email-templates/images/email/rss.gif" alt="rss" /></a>
+                                                        <a href="$SiteConfig.EmailRssLink"><img width="40" height="47" src="{$BaseHref}email-templates/images/email/rss.gif" alt="rss" /></a>
                                                         <% end_if %>
                                                     </td>
                                                 </tr>
