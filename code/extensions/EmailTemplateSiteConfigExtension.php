@@ -21,7 +21,7 @@ class EmailTemplateSiteConfigExtension extends DataExtension
             return $fields;
         }
 
-        // Already defined
+        // Already defined by another module
         if ($fields->dataFieldByName('EmailFooter')) {
             return $fields;
         }
@@ -84,16 +84,24 @@ class EmailTemplateSiteConfigExtension extends DataExtension
 
     public function EmailBaseColor()
     {
-        if ($this->owner->PrimaryColor) {
-            return $this->owner->PrimaryColor;
+        $field = EmailTemplate::config()->base_color_field;
+        if ($field && $this->owner->$field) {
+            return $this->owner->$field;
         }
         return EmailTemplate::config()->base_color;
     }
 
     public function EmailLogoTemplate()
     {
-        if ($this->owner->LogoID) {
-            return $this->owner->Logo();
+        // Use EmailLogo if defined
+        if ($this->owner->EmailLogoID) {
+            return $this->owner->EmailLogo();
+        }
+        // Otherwise, use configurable field
+        $field = EmailTemplate::config()->base_color_field;
+        if ($field && $this->owner->$field) {
+            $method = str_replace('ID', '', $field);
+            return $this->owner->$method();
         }
     }
 
@@ -102,10 +110,11 @@ class EmailTemplateSiteConfigExtension extends DataExtension
         if (!EmailTemplate::config()->show_twitter) {
             return;
         }
-        if (!$this->owner->TwitterAccount) {
+        $field = EmailTemplate::config()->twitter_field;
+        if ($field && !$this->owner->$field) {
             return;
         }
-        return 'https://twitter.com/' . $this->owner->TwitterAccount;
+        return 'https://twitter.com/' . $this->owner->$field;
     }
 
     public function EmailFacebookLink()
@@ -113,10 +122,11 @@ class EmailTemplateSiteConfigExtension extends DataExtension
         if (!EmailTemplate::config()->show_facebook) {
             return;
         }
-        if (!$this->owner->FacebookAccount) {
+        $field = EmailTemplate::config()->facebook_field;
+        if ($field && !$this->owner->$field) {
             return;
         }
-        return 'https://www.facebook.com/' . $this->owner->FacebookAccount;
+        return 'https://www.facebook.com/' . $this->owner->$field;
     }
 
     public function EmailRssLink()

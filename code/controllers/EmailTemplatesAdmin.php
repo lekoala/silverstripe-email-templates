@@ -95,7 +95,7 @@ class EmailTemplatesAdmin extends ModelAdmin
         }
         $SendTestEmail = $request->requestVar('SendTestEmail');
 
-        if (!SendTestEmail) {
+        if (!$SendTestEmail) {
             throw new Exception('Please define SendTestEmail parameter');
         }
 

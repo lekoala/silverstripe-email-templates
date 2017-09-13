@@ -10,19 +10,24 @@ SiteConfig:
     - EmailTemplateSiteConfigExtension
 EmailTemplate:
   helper_show_methods: false
+  # template options
+  base_color: '#ff6f6f'
+  show_facebook: true
+  show_twitter: true
+  show_rss: false
+  # fields used in SiteConfig
+  facebook_field: 'FacebookAccount'
+  twitter_field: 'TwitterAccount'
+  logo_field: 'LogoID'
+  base_color_field: 'PrimaryColor'
 EmailImportTask:
   ignored_modules: ['cms','framework']
 BetterEmail:
   max_records: 1000
-  # time or max
+  # possible values : 'time' or 'max'
   cleanup_method: 'max'
   cleanup_time: '-7 days'
   template: 'DefaultEmailTemplate'
-  template_options:
-    base_color: '#ff6f6f'
-    show_facebook: true
-    show_twitter: true
-    show_rss: false
 Injector:
   Email:
     class: BetterEmail
