@@ -1,0 +1,29 @@
+fr:
+  EmailTemplate:
+    AVAILABLEMERGEFIELDSTITLE: 'Available merge fields'
+    CODEPLACEHOLDER: 'A unique code that will be used in code to retrieve the template, e.g.: my-email'
+    DISABLEDWARNING: 'Your mailer does not support disabling emails'
+    ENCLOSEFIELD: 'To escape a field from surrounding text, you can enclose it between brackets, eg: {$Member.FirstName}.'
+    PLURALNAME: 'Email Templates'
+    SINGULARNAME: 'Email Template'
+  EmailTemplateSiteConfigExtension:
+    ContactEmail: 'Default Recipient'
+    DefaultFromEmail: 'Default Sender'
+    EmailFooter: 'Email Footer'
+  MemberChangePasswordEmail:
+    EMAIL: Email
+    HELLO: Bonjour
+    PASSWORD: 'Mot de passe'
+    REGARDS: 'Cordialement'
+    SUBJECT: 'Votre mot de passe a été modifié'
+    TEXT1: 'Votre mot de passe pour'
+    TEXT2: 'Vous pouvez à présent utiliser les identifiants suivants:'
+  MemberForgotPasswordEmail:
+    HELLO: Bonjour
+    REGARDS: 'Cordialement'
+    SUBJECT: 'Votre lien de réinitialisation'
+    TEXT1: 'Vous avez demandé de réinitialiser votre mot de passe'
+    TEXT2: 'Cliquez ici pour réinitialiser votre mot de passe'
+  SentEmail:
+    PLURALNAME: 'Sent Emails'
+    SINGULARNAME: 'Sent Email'

@@ -282,9 +282,14 @@ class EmailImportTask extends BuildTask
                 i18n::set_locale($defaultLocale);
             }
 
+            $category = $module;
+            if ($category == 'email-templates') {
+                $category = 'system';
+            }
+
             // Other properties
             $emailTemplate->Code = $code;
-            $emailTemplate->Category = $module;
+            $emailTemplate->Category = $category;
             if (class_exists('Subsite') && Subsite::currentSubsiteID()) {
                 $emailTemplate->SubsiteID = Subsite::currentSubsiteID();
             }

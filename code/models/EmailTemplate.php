@@ -311,6 +311,18 @@ class EmailTemplate extends DataObject
         /* @var $email BetterEmail */
         $email = BetterEmail::create();
 
+        $this->applyTemplate($email);
+
+        return $email;
+    }
+
+    /**
+     *
+     * @param Email $email
+     */
+    public function applyTemplate(&$email)
+    {
+
         if ($this->Title) {
             $email->setSubject($this->Title);
         }
@@ -332,8 +344,6 @@ class EmailTemplate extends DataObject
         if ($this->Disabled) {
             $email->addCustomHeader('X-SendingDisabled', true);
         }
-
-        return $email;
     }
 
     /**

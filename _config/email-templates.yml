@@ -32,9 +32,9 @@ Injector:
   Email:
     class: BetterEmail
   Member_ForgotPasswordEmail:
-    class: Email
+    class: MemberForgotPasswordEmail
   Member_ChangePasswordEmail:
-    class: Email
+    class: MemberChangePasswordEmail
 ---
 Only:
   classexists: 'Fluent'
