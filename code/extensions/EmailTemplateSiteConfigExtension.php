@@ -17,6 +17,9 @@ class EmailTemplateSiteConfigExtension extends DataExtension
     public function updateCMSFields(FieldList $fields)
     {
         // Disabled - don't show fields
+        if (defined('EMAIL_TEMPLATES_UPDATE_FIELDS') && !EMAIL_TEMPLATES_UPDATE_FIELDS) {
+            return $fields;
+        }
         if (!SiteConfig::config()->email_templates_update_fields) {
             return $fields;
         }
