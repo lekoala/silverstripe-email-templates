@@ -363,7 +363,7 @@
                                                         <a href="$SiteConfig.EmailTwitterLink"><img width="44" height="47" src="{$BaseHref}email-templates/images/email/twitter.gif" alt="twitter" /></a>
                                                         <% end_if %>
                                                         <% if $SiteConfig.EmailFacebookLink %>
-                                                        <a href=" $SiteConfig.EmailFacebookLink "><img width="38" height="47" src="{$BaseHref}email-templates/images/email/facebook.gif" alt="facebook" /></a>
+                                                        <a href="$SiteConfig.EmailFacebookLink "><img width="38" height="47" src="{$BaseHref}email-templates/images/email/facebook.gif" alt="facebook" /></a>
                                                         <% end_if %>
                                                         <% if $SiteConfig.EmailRssLink %>
                                                         <a href="$SiteConfig.EmailRssLink"><img width="40" height="47" src="{$BaseHref}email-templates/images/email/rss.gif" alt="rss" /></a>
