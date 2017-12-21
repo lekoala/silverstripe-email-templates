@@ -168,7 +168,7 @@ class EmailTemplate extends DataObject
         if (!$template && class_exists('Subsite') && Subsite::currentSubsiteID()) {
             $template = EmailTemplate::get()
                 ->filter('Code', $code)
-                ->alterDataQuery(function(DataQuery $dq) {
+                ->alterDataQuery(function (DataQuery $dq) {
                     $dq->setQueryParam('Subsite.filter', false);
                 })
                 ->first();
@@ -208,7 +208,7 @@ class EmailTemplate extends DataObject
 
     /**
      * Content of the literal field for the merge fields
-     * 
+     *
      * @return string
      */
     protected function mergeFieldsHelper()
@@ -289,7 +289,8 @@ class EmailTemplate extends DataObject
         if (class_exists('CmsInlineFormAction')) {
             // Test emails
             $compo = new FieldGroup(
-                $recipient = new TextField('SendTestEmail', ''), $action = new CmsInlineFormAction('doSendTestEmail', 'Send')
+                $recipient = new TextField('SendTestEmail', ''),
+                $action = new CmsInlineFormAction('doSendTestEmail', 'Send')
             );
             $recipient->setAttribute('placeholder', 'my@email.test');
             $recipient->setValue(Email::config()->admin_email);
@@ -312,6 +313,30 @@ class EmailTemplate extends DataObject
         $email = BetterEmail::create();
 
         $this->applyTemplate($email);
+
+        return $email;
+    }
+
+    /**
+     * Returns an instance of an Email with the content tailored to the member
+     *
+     * @param Member $member
+     * @return BetterEmail
+     */
+    public function getEmailForMember(Member $member)
+    {
+        $restoreLocale = null;
+        if ($member->Locale) {
+            $restoreLocale = i18n::get_locale();
+            i18n::set_locale($member->Locale);
+        }
+
+        $email = $this->getEmail();
+        $email->setToMember($member);
+
+        if ($restoreLocale) {
+            i18n::set_locale($restoreLocale);
+        }
 
         return $email;
     }
@@ -368,7 +393,7 @@ class EmailTemplate extends DataObject
         $paragraphPosition = strpos($debug, '</p>');
         $html = substr($debug, $paragraphPosition + 4);
 
-        return (string) $html;
+        return (string)$html;
     }
 
     /**
