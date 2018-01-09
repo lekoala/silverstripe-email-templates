@@ -325,20 +325,21 @@ class EmailTemplate extends DataObject
      */
     public function getEmailForMember(Member $member)
     {
-        $restoreLocale = null;
-        if ($member->Locale) {
-            $restoreLocale = i18n::get_locale();
-            i18n::set_locale($member->Locale);
-        }
-
+        if ($member->Locale) $this->applyLocale($member->Locale);
         $email = $this->getEmail();
         $email->setToMember($member);
-
-        if ($restoreLocale) {
-            i18n::set_locale($restoreLocale);
-        }
-
         return $email;
+    }
+
+    private $locale = null;
+
+    /**
+     *
+     * @param Locale $locale
+     */
+    private function applyLocale($locale)
+    {
+        $this->locale = $locale;
     }
 
     /**
@@ -347,13 +348,19 @@ class EmailTemplate extends DataObject
      */
     public function applyTemplate(&$email)
     {
-
-        if ($this->Title) {
+        if ($this->locale && $this->{'Title_'. $this->locale}) {
+            $email->setSubject($this->{'Title_'. $this->locale});
+        } else if ($this->Title) {
             $email->setSubject($this->Title);
         }
 
+        $body = $this->Content;
+        if ($this->locale && $this->{'Content_'. $this->locale}) {
+            $body = $this->{'Content_'. $this->locale};
+        }
+
         $email->setBody([
-            'Body' => $this->Content,
+            'Body' => $body,
             'Callout' => $this->Callout,
             'SideBar' => $this->SideBar,
         ]);
