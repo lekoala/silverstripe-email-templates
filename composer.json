@@ -9,12 +9,10 @@
         "cms"
     ],
     "license": "MIT",
-    "authors": [
-        {
-            "name": "LeKoala",
-            "email": "thomas@lekoala.be"
-        }
-    ],
+    "authors": [{
+        "name": "LeKoala",
+        "email": "thomas@lekoala.be"
+    }],
     "require": {
         "silverstripe/framework": "~3.2"
     },

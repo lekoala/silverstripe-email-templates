@@ -109,7 +109,7 @@ class BetterEmail extends Email
     }
 
     /**
-     * Sends an HTML email 
+     * Sends an HTML email
      * @param int $messageID
      */
     public function send($messageID = null)
@@ -119,7 +119,7 @@ class BetterEmail extends Email
 
     /**
      * Sends a plain text email
-     * @param int $messageID 	 
+     * @param int $messageID
      */
     public function sendPlain($messageID = null)
     {
@@ -217,7 +217,7 @@ class BetterEmail extends Email
      * Load all the template variables into the internal variables, including
      * the template into body. Called before send() or debug().
      *
-     * $isPlain=true will do nothing and is kept for compatibility reason only. 
+     * $isPlain=true will do nothing and is kept for compatibility reason only.
      * Template data can contain important information and should be properly
      * converted to plaintext by the send method.
      */
@@ -260,6 +260,9 @@ class BetterEmail extends Email
                     $parsed_body[$k] = $viewer->process($data);
                 } catch (Exception $ex) {
                     SS_Log::log($ex->getMessage(), SS_Log::DEBUG);
+                    if(Director::isDev()) {
+                        $parsed_body[$k] = $ex->getMessage();
+                    }
                 }
             }
 

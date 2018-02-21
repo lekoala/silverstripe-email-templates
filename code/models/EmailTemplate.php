@@ -407,16 +407,46 @@ class EmailTemplate extends DataObject
         $data = array();
 
         $body = $email->getOriginalBody();
+
+        // Parse the body for variables
         foreach ($body as $k => $v) {
             $matches = null;
-            preg_match_all('/\$([a-zA-Z]*)/', $v, $matches);
+            preg_match_all('/\$([a-zA-Z.]*)/', $v, $matches);
             if ($matches && !empty($matches[1])) {
                 foreach ($matches[1] as $name) {
-                    $data[$name] = '{' . $name . '}';
+                    $name = trim($name, '.');
+
+                    if (strpos($name, '.') !== false) {
+                        // It's an object
+                        $parts = explode('.', $name);
+                        $objectName = array_shift($parts);
+                        if (isset($data[$objectName])) {
+                            $object = $data[$objectName];
+                        } else {
+                            $object = new ArrayData(array());
+                        }
+                        $curr = $object;
+
+                        // May be recursive
+                        foreach ($parts as $part) {
+                            if (is_string($curr)) {
+                                $curr = [];
+                                $object->$part = $curr;
+                            }
+                            $object->$part = '{' . "$objectName.$part" . '}';
+                            $prevPart = $part;
+                            $curr = $object->$part;
+                        }
+                        $data[$objectName] = $object;
+                    } else {
+                        // It's a simple var
+                        $data[$name] = '{' . $name . '}';
+                    }
                 }
             }
         }
 
+        // Inject random data for known classes
         foreach ($this->getAvailableModels() as $name => $class) {
             if (!class_exists($class)) {
                 continue;
