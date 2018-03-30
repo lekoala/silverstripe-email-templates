@@ -33,12 +33,14 @@ class EmailTemplate extends DataObject
     private static $summary_fields = array(
         'Title',
         'Code',
-        'Category'
+        'Category',
+        'Disabled',
     );
     private static $searchable_fields = array(
         'Title',
         'Code',
-        'Category'
+        'Category',
+        'Disabled',
     );
     private static $indexes = array(
         'Code' => true, // Code is not unique because it can be used by subsites
