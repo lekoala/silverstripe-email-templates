@@ -221,6 +221,9 @@ class EmailImportTask extends BuildTask
             foreach ($locales as $locale) {
                 $contentLocale[$locale] = $content;
             }
+            if (!isset($contentLocale[$defaultLocale])) {
+                $contentLocale[$defaultLocale] = $content;
+            }
             foreach ($translationTable as $entity => $translationData) {
                 $escapedEntity = str_replace('.', '\.', $entity);
                 $baseTranslation = null;
