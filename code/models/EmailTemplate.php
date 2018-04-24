@@ -371,6 +371,8 @@ class EmailTemplate extends DataObject
         if ($this->Disabled) {
             $email->addCustomHeader('X-SendingDisabled', true);
         }
+
+        $this->extend('updateApplyTemplate', $email);
     }
 
     /**
