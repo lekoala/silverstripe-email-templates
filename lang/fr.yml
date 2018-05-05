@@ -6,6 +6,8 @@ fr:
     ENCLOSEFIELD: 'To escape a field from surrounding text, you can enclose it between brackets, eg: {$Member.FirstName}.'
     PLURALNAME: 'Email Templates'
     SINGULARNAME: 'Email Template'
+    BULK_ENABLE: 'Activer'
+    BULK_DISABLE: 'Désactiver'
   EmailTemplateSiteConfigExtension:
     ContactEmail: 'Default Recipient'
     DefaultFromEmail: 'Default Sender'
