@@ -100,6 +100,28 @@ class EmailTemplate extends DataObject
     }
 
     /**
+     * Allow to enable/disable templates in bulk.
+     */
+    public function bulkManagerAdd()
+    {
+        return array(
+            array('Name' => 'enable',  'Label' => _t('EmailTemplate.BULK_ENABLE',  'Mark as enabled'),  'Handler' => 'EmailTemplateGridFieldBulkActionHandler'),
+            array('Name' => 'disable', 'Label' => _t('EmailTemplate.BULK_DISABLE', 'Mark as disabled'), 'Handler' => 'EmailTemplateGridFieldBulkActionHandler'),
+        );
+    }
+
+    /**
+     * Enable or disable a template.
+     *
+     * @param Boolean $disabled (true: disabled, false or empty: enabled)
+     */
+    public function enable($disabled = false)
+    {
+        $this->Disabled = $disabled;
+        $this->write();
+    }
+
+    /**
      * Base models always available in the controller
      *
      * @return array
@@ -468,5 +490,61 @@ class EmailTemplate extends DataObject
         }
 
         return $email->populateTemplate($data);
+    }
+}
+
+class EmailTemplateGridFieldBulkActionHandler extends GridFieldBulkActionHandler
+{
+
+    /**
+     * RequestHandler allowed actions
+     * @var array
+     */
+    private static $allowed_actions = array(
+        'enable',
+        'disable',
+    );
+
+    /**
+     * RequestHandler url => action map
+     * @var array
+     */
+    private static $url_handlers = array(
+        'enable' => 'enable',
+        'disable' => 'disable',
+    );
+
+    public function enable(SS_HTTPRequest $request)
+    {
+        $ids = array();
+
+        foreach ($this->getRecords() as $record) {
+            array_push($ids, $record->ID);
+            $record->enable(false);
+        }
+
+        $response = new SS_HTTPResponse(Convert::raw2json(array(
+            'done' => true,
+            'records' => $ids
+        )));
+        $response->addHeader('Content-Type', 'text/json');
+        return $response;
+    }
+
+    public function disable(SS_HTTPRequest $request)
+    {
+        $ids = array();
+
+        foreach ($this->getRecords() as $record) {
+            array_push($ids, $record->ID);
+            $record->enable(true);
+        }
+
+        $response = new SS_HTTPResponse(Convert::raw2json(array(
+            'done' => true,
+            'records' => $ids
+        )));
+        $response->addHeader('Content-Type', 'text/json');
+        return $response;
     }
 }
