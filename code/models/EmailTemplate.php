@@ -376,10 +376,11 @@ class EmailTemplate extends DataObject
             $email->setSubject($this->Title);
         }
 
+        // Use db object to handle shortcodes as well
         $email->setBody([
-            'Body' => $this->Content,
-            'Callout' => $this->Callout,
-            'SideBar' => $this->SideBar,
+            'Body' => $this->dbObject('Content')->forTemplate(),
+            'Callout' => $this->dbObject('Callout')->forTemplate(),
+            'SideBar' =>$this->dbObject('SideBar')->forTemplate(),
         ]);
 
         if ($this->DefaultSender) {
