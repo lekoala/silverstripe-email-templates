@@ -218,8 +218,10 @@ class EmailImportTask extends BuildTask
             }
 
             $contentLocale = array();
-            foreach ($locales as $locale) {
-                $contentLocale[$locale] = $content;
+            if ($locales) { // May be null
+                foreach ($locales as $locale) {
+                    $contentLocale[$locale] = $content;
+                }
             }
             if (!isset($contentLocale[$defaultLocale])) {
                 $contentLocale[$defaultLocale] = $content;
