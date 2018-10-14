@@ -11,6 +11,7 @@ class EmailTemplatesAdmin extends ModelAdmin
     private static $managed_models = array(
         'EmailTemplate',
         'SentEmail',
+        'Notification',
     );
     private static $url_segment = 'emails';
     private static $menu_title = 'Emails';
