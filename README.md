@@ -137,6 +137,8 @@ Compatibility
 ==================
 Tested with 4.4 but should work on any 4.x
 
+For 3.x, use branch 1
+
 Maintainer
 ==================
 LeKoala - thomas@lekoala.be
