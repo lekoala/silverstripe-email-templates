@@ -1,5 +1,13 @@
 <?php
 
+namespace LeKoala\EmailTemplates\Extensions;
+
+use SilverStripe\ORM\DataQuery;
+use SilverStripe\ORM\DataExtension;
+use SilverStripe\Security\Permission;
+use LeKoala\Base\Subsite\SubsiteHelper;
+use SilverStripe\ORM\Queries\SQLSelect;
+
 /**
  * Add subsites support
  *
@@ -23,9 +31,9 @@ class EmailSubsiteExtension extends DataExtension
     /**
      * Update any requests to limit the results to the current site
      */
-    public function augmentSQL(SQLQuery &$query, DataQuery &$dataQuery = null)
+    public function augmentSQL(SQLSelect $query, DataQuery $dataQuery = null)
     {
-        if (Subsite::$disable_subsite_filter) {
+        if (SubsiteHelper::subsiteFilterDisabled()) {
             return;
         }
         if ($dataQuery && $dataQuery->getQueryParam('Subsite.filter') === false) {
@@ -38,9 +46,9 @@ class EmailSubsiteExtension extends DataExtension
         }
 
         // Don't run on delete queries, since they are always tied to a specific ID.
-        if ($query->getDelete()) {
-            return;
-        }
+        // if ($query->getDelete()) {
+        //     return;
+        // }
 
         // If we match on a subsite, don't filter twice
         $regexp = '/^(.*\.)?("|`)?SubsiteID("|`)?\s?=/';
@@ -50,7 +58,7 @@ class EmailSubsiteExtension extends DataExtension
             }
         }
 
-        $subsiteID = (int) Subsite::currentSubsiteID();
+        $subsiteID = (int) SubsiteHelper::currentSubsiteID();
 
         $froms = $query->getFrom();
         $froms = array_keys($froms);
@@ -67,7 +75,7 @@ class EmailSubsiteExtension extends DataExtension
 
         // Assign to current subsite when created
         if (!$this->owner->ID && !$this->owner->SubsiteID) {
-            $this->owner->SubsiteID = Subsite::currentSubsiteID();
+            $this->owner->SubsiteID = SubsiteHelper::currentSubsiteID();
         }
     }
 
@@ -82,7 +90,7 @@ class EmailSubsiteExtension extends DataExtension
      */
     public function canEdit($member = null)
     {
-        return Permission::check('CMS_ACCESS_EmailsAdmin', 'any', $member);
+        return Permission::check('CMS_ACCESS', 'any', $member);
     }
 
     /**
@@ -91,7 +99,7 @@ class EmailSubsiteExtension extends DataExtension
      */
     public function canCreate($member = null)
     {
-        return Permission::check('CMS_ACCESS_EmailsAdmin', 'any', $member);
+        return Permission::check('CMS_ACCESS', 'any', $member);
     }
 
     /**
@@ -100,7 +108,7 @@ class EmailSubsiteExtension extends DataExtension
      */
     public function canDelete($member = null)
     {
-        return Permission::check('CMS_ACCESS_EmailsAdmin', 'any', $member);
+        return Permission::check('CMS_ACCESS', 'any', $member);
     }
 
     /**
@@ -108,6 +116,6 @@ class EmailSubsiteExtension extends DataExtension
      */
     public function cacheKeyComponent()
     {
-        return 'subsite-' . Subsite::currentSubsiteID();
+        return 'subsite-' . SubsiteHelper::currentSubsiteID();
     }
 }

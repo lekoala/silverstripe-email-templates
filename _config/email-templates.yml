@@ -1,14 +1,13 @@
 ---
 Name: email-templates
-After:
-  - 'framework/*'
-  - 'cms/*'
+After: '#rootroutes'
 ---
-SiteConfig:
-  email_templates_update_fields: true
+SilverStripe\SiteConfig\SiteConfig:
   extensions:
-    - EmailTemplateSiteConfigExtension
-EmailTemplate:
+    - LeKoala\EmailTemplates\Extensions\EmailTemplateSiteConfigExtension
+LeKoala\EmailTemplates\Email\BetterEmail:
+  template: 'DefaultEmailTemplate'
+LeKoala\EmailTemplates\Models\EmailTemplate:
   helper_show_methods: false
   # template options
   base_color: '#ff6f6f'
@@ -20,35 +19,14 @@ EmailTemplate:
   twitter_field: 'TwitterAccount'
   logo_field: 'LogoID'
   base_color_field: 'PrimaryColor'
-EmailImportTask:
-  ignored_modules: ['cms','framework']
-BetterEmail:
+LeKoala\EmailTemplates\Tasks\EmailImportTask:
+  import_framework: true
+  extra_paths: []
+LeKoala\EmailTemplates\Models\SentEmail:
   max_records: 1000
   # possible values : 'time' or 'max'
   cleanup_method: 'max'
   cleanup_time: '-7 days'
-  template: 'DefaultEmailTemplate'
-Injector:
-  Email:
-    class: BetterEmail
-  Member_ForgotPasswordEmail:
-    class: MemberForgotPasswordEmail
-  Member_ChangePasswordEmail:
-    class: MemberChangePasswordEmail
----
-Only:
-  classexists: 'Fluent'
----
-EmailTemplate:
-  extensions:
-    - FluentExtension
----
-Only:
-  classexists: 'Subsite'
----
-EmailTemplate:
-  extensions:
-    - EmailSubsiteExtension
-SentEmail:
-  extensions:
-    - EmailSubsiteExtension
+SilverStripe\Core\Injector\Injector:
+  SilverStripe\Control\Email\Email:
+    class: LeKoala\EmailTemplates\Email\BetterEmail

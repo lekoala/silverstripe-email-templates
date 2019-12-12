@@ -1,24 +1,50 @@
 <?php
 
+namespace LeKoala\EmailTemplates\Models;
+
+use Exception;
+use SilverStripe\Forms\Tab;
+use SilverStripe\i18n\i18n;
+use SilverStripe\Core\ClassInfo;
+use SilverStripe\ORM\DataObject;
+use SilverStripe\View\ArrayData;
+use SilverStripe\Security\Member;
+use SilverStripe\Forms\HeaderField;
+use SilverStripe\Core\Config\Config;
+use SilverStripe\Forms\LiteralField;
+use SilverStripe\Control\Email\Email;
+use SilverStripe\Forms\DropdownField;
+use SilverStripe\Security\Permission;
+use LeKoala\EmailTemplates\Email\BetterEmail;
+use LeKoala\EmailTemplates\Admin\EmailTemplatesAdmin;
+use SilverStripe\SiteConfig\SiteConfig;
+
 /**
- * EmailTemplate
+ * User defined email templates
  *
- * @property string $Title
+ * Content of the template should override default content provided with setHTMLTemplate
+ *
+ * For example, in the framework we have
+ *    $email = Email::create()->setHTMLTemplate('SilverStripe\\Control\\Email\\ForgotPasswordEmail')
+ *
+ * It means our template code should match this : ForgotPasswordEmail
+ *
+ * @property string $Subject
  * @property string $DefaultSender
  * @property string $DefaultRecipient
  * @property string $Category
  * @property string $Code
  * @property string $Content
  * @property string $Callout
- * @property string $SideBar
  * @property boolean $Disabled
  * @author lekoala
  */
 class EmailTemplate extends DataObject
 {
+    private static $table_name = 'EmailTemplate';
 
     private static $db = array(
-        'Title' => 'Varchar(255)',
+        'Subject' => 'Varchar(255)',
         'DefaultSender' => 'Varchar(255)',
         'DefaultRecipient' => 'Varchar(255)',
         'Category' => 'Varchar(255)',
@@ -26,18 +52,17 @@ class EmailTemplate extends DataObject
         // Content
         'Content' => 'HTMLText',
         'Callout' => 'HTMLText',
-        'SideBar' => 'HTMLText',
         // Configuration
         'Disabled' => 'Boolean',
     );
     private static $summary_fields = array(
-        'Title',
+        'Subject',
         'Code',
         'Category',
         'Disabled',
     );
     private static $searchable_fields = array(
-        'Title',
+        'Subject',
         'Code',
         'Category',
         'Disabled',
@@ -46,37 +71,28 @@ class EmailTemplate extends DataObject
         'Code' => true, // Code is not unique because it can be used by subsites
     );
     private static $translate = array(
-        'Title', 'Content', 'Callout', 'SideBar'
+        'Subject', 'Content', 'Callout'
     );
+
+    public function getTitle()
+    {
+        return $this->Subject;
+    }
 
     public function getCMSFields()
     {
         $fields = parent::getCMSFields();
-        $config = EmailTemplate::config();
-
-        $objectsSource = array();
-        $dataobjects = ClassInfo::subclassesFor('DataObject');
-        foreach ($dataobjects as $dataobject) {
-            if ($dataobject == 'DataObject') {
-                continue;
-            }
-            $objectsSource[$dataobject] = $dataobject;
-        }
-        asort($objectsSource);
 
         // Do not allow changing subsite
         $fields->removeByName('SubsiteID');
 
-        // form-extras integration
-        if (class_exists('ComboField')) {
-            $categories = EmailTemplate::get()->column('Category');
-            $fields->replaceField('Category', new ComboField('Category', 'Category', array_combine($categories, $categories)));
-        }
+        $categories = EmailTemplate::get()->column('Category');
+        $fields->replaceField('Category', new DropdownField('Category', 'Category', array_combine($categories, $categories)));
 
         $fields->dataFieldByName('Callout')->setRows(5);
 
         $codeField = $fields->dataFieldByName('Code');
-        $codeField->setAttribute('placeholder', _t('EmailTemplate.CODEPLACEHOLDER', 'A unique code that will be used in code to retrieve the template, e.g.: my-email'));
+        $codeField->setAttribute('placeholder', _t('EmailTemplate.CODEPLACEHOLDER', 'A unique code that will be used in code to retrieve the template, e.g.: MyEmail'));
 
         if ($this->Code) {
             $codeField->setReadonly(true);
@@ -89,11 +105,6 @@ class EmailTemplate extends DataObject
 
         if ($this->ID) {
             $fields->addFieldToTab('Root.Preview', $this->previewTab());
-        }
-
-        $mailer = Email::mailer();
-        if (!$mailer->hasMethod('getSendingDisabled')) {
-            $fields->insertAfter('Disabled', new LiteralField('DisabledWarning', '<div class="message bad">' . _t('EmailTemplate.DISABLEDWARNING', "Your mailer does not support disabling emails") . '</div>'));
         }
 
         return $fields;
@@ -109,7 +120,7 @@ class EmailTemplate extends DataObject
         return Permission::check('CMS_ACCESS', 'any', $member);
     }
 
-    public function canCreate($member = null)
+    public function canCreate($member = null, $context = [])
     {
         return Permission::check('CMS_ACCESS', 'any', $member);
     }
@@ -120,65 +131,44 @@ class EmailTemplate extends DataObject
     }
 
     /**
-     * Allow to enable/disable templates in bulk.
-     */
-    public function bulkManagerAdd()
-    {
-        return array(
-            array('Name' => 'enable',  'Label' => _t('EmailTemplate.BULK_ENABLE',  'Mark as enabled'),  'Handler' => 'EmailTemplateGridFieldBulkActionHandler'),
-            array('Name' => 'disable', 'Label' => _t('EmailTemplate.BULK_DISABLE', 'Mark as disabled'), 'Handler' => 'EmailTemplateGridFieldBulkActionHandler'),
-        );
-    }
-
-    /**
-     * Enable or disable a template.
-     *
-     * @param Boolean $disabled (true: disabled, false or empty: enabled)
-     */
-    public function enable($disabled = false)
-    {
-        $this->Disabled = $disabled;
-        $this->write();
-    }
-
-    /**
-     * Base models always available in the controller
-     *
-     * @return array
-     */
-    public function getBaseModels()
-    {
-        return array(
-            'CurrentMember' => 'Member',
-            'SiteConfig' => 'SiteConfig'
-        );
-    }
-
-    /**
      * A map of Name => Class
      *
      * User models are variables with a . that should match an existing DataObject name
      *
      * @return array
      */
-    public function getUserModels()
+    public function getAvailableModels()
     {
-        $fields = ['Content', 'Callout', 'SideBar'];
+        $fields = ['Content', 'Callout'];
 
         $models = [];
+
+        // Build a list of non namespaced models
+        // They are not likely to clash anyway because of their unique table name
+        $dataobjects = ClassInfo::getValidSubClasses(DataObject::class);
+        $map = [];
+        foreach ($dataobjects as $k => $v) {
+            $parts = explode('\\', $v);
+            $name = end($parts);
+            $map[$name] = $v;
+        }
+
         foreach ($fields as $field) {
+            // Match variables with a dot in the call, like $MyModel.SomeMethod
             preg_match_all('/\$([a-zA-Z]+)\./m', $this->$field, $matches);
 
             if (!empty($matches) && !empty($matches[1])) {
+                // Get unique model names
                 $arr = array_unique($matches[1]);
 
                 foreach ($arr as $name) {
-                    if (!class_exists($name)) {
+                    if (!isset($map[$name])) {
                         continue;
                     }
-                    $singl = singleton($name);
+                    $class = $map[$name];
+                    $singl = singleton($class);
                     if ($singl instanceof DataObject) {
-                        $models[$name] = $name;
+                        $models[$name] = $class;
                     }
                 }
             }
@@ -188,39 +178,19 @@ class EmailTemplate extends DataObject
     }
 
     /**
-     * An map of Name => Class
-     *
-     * @return array
-     */
-    public function getAvailableModels()
-    {
-        $userModels = $this->getUserModels();
-        $baseModels = $this->getBaseModels();
-        return array_merge($baseModels, $userModels);
-    }
-
-    /**
      * Get an email template by code
      *
      * @param string $code
+     * @param bool $alwaysReturn
      * @return EmailTemplate
      */
-    public static function getByCode($code)
+    public static function getByCode($code, $alwaysReturn = true)
     {
         $template = EmailTemplate::get()->filter('Code', $code)->first();
-        // If subsite, fallback to main site email if not defined
-        if (!$template && class_exists('Subsite') && Subsite::currentSubsiteID()) {
-            $template = EmailTemplate::get()
-                ->filter('Code', $code)
-                ->alterDataQuery(function (DataQuery $dq) {
-                    $dq->setQueryParam('Subsite.filter', false);
-                })
-                ->first();
-        }
         // Always return a template
-        if (!$template) {
+        if (!$template && $alwaysReturn) {
             $template = new EmailTemplate();
-            $template->Title = $code;
+            $template->Subject = $code;
             $template->Code = $code;
             $template->Content = 'Replace this with your own content and untick disabled';
             $template->Disabled = true;
@@ -242,11 +212,6 @@ class EmailTemplate extends DataObject
 
     public function onBeforeWrite()
     {
-        if ($this->Code) {
-            $filter = new URLSegmentFilter;
-            $this->Code = $filter->filter($this->Code);
-        }
-
         parent::onBeforeWrite();
     }
 
@@ -279,9 +244,9 @@ class EmailTemplate extends DataObject
         $classes = array_unique($classes);
 
         $locales = array();
-        if (class_exists('Fluent')) {
-            $locales = Fluent::locales();
-        }
+        // if (class_exists('Fluent')) {
+        //     $locales = Fluent::locales();
+        // }
 
         foreach ($classes as $model) {
             if (!class_exists($model)) {
@@ -312,36 +277,25 @@ class EmailTemplate extends DataObject
 
             $content = trim($content, ', ') . '<br/>';
         }
-        $content .= "<div class='message info'>" . _t('EmailTemplate.ENCLOSEFIELD', 'To escape a field from surrounding text, you can enclose it between brackets, eg: {$Member.FirstName}.') . '</div>';
+        $content .= "<br/><div class='message info'>" . _t('EmailTemplate.ENCLOSEFIELD', 'To escape a field from surrounding text, you can enclose it between brackets, eg: {$Member.FirstName}.') . '</div>';
         return $content;
     }
 
     /**
      * Provide content for the Preview tab
      *
-     * @return \Tab
+     * @return Tab
      */
     protected function previewTab()
     {
         $tab = new Tab('Preview');
 
         // Preview iframe
-        $iframeSrc = '/admin/emails/EmailTemplate/PreviewEmail/?id=' . $this->ID;
+        $sanitisedModel =  str_replace('\\', '-', EmailTemplate::class);
+        $adminSegment = EmailTemplatesAdmin::config()->url_segment;
+        $iframeSrc = '/admin/' . $adminSegment . '/' . $sanitisedModel . '/PreviewEmail/?id=' . $this->ID;
         $iframe = new LiteralField('iframe', '<iframe src="' . $iframeSrc . '" style="width:800px;background:#fff;border:1px solid #ccc;min-height:500px;vertical-align:top"></iframe>');
         $tab->push($iframe);
-
-        if (class_exists('CmsInlineFormAction')) {
-            // Test emails
-            $compo = new FieldGroup(
-                $recipient = new TextField('SendTestEmail', ''),
-                $action = new CmsInlineFormAction('doSendTestEmail', 'Send')
-            );
-            $recipient->setAttribute('placeholder', 'my@email.test');
-            $recipient->setValue(Email::config()->admin_email);
-            $tab->push(new HiddenField('EmailTemplateID', '', $this->ID));
-            $tab->push(new HeaderField('SendTestEmailHeader', 'Send test email'));
-            $tab->push($compo);
-        }
 
         return $tab;
     }
@@ -353,11 +307,11 @@ class EmailTemplate extends DataObject
      */
     public function getEmail()
     {
-        /* @var $email BetterEmail */
-        $email = BetterEmail::create();
-
+        $email = Email::create();
+        if (!$email instanceof BetterEmail) {
+            throw new Exception("Make sure you are injecting the BetterEmail class instead of your base Email class");
+        }
         $this->applyTemplate($email);
-
         return $email;
     }
 
@@ -386,21 +340,22 @@ class EmailTemplate extends DataObject
     }
 
     /**
+     * Apply this template to the email
      *
-     * @param Email $email
+     * @param BetterEmail $email
      */
     public function applyTemplate(&$email)
     {
+        $email->setEmailTemplate($this);
 
-        if ($this->Title) {
-            $email->setSubject($this->Title);
+        if ($this->Subject) {
+            $email->setSubject($this->Subject);
         }
 
-        // Use db object to handle shortcodes as well
-        $email->setBody([
-            'Body' => $this->dbObject('Content')->forTemplate(),
+        // Use dbObject to handle shortcodes as well
+        $email->setData([
+            'EmailContent' => $this->dbObject('Content')->forTemplate(),
             'Callout' => $this->dbObject('Callout')->forTemplate(),
-            'SideBar' =>$this->dbObject('SideBar')->forTemplate(),
         ]);
 
         if ($this->DefaultSender) {
@@ -410,11 +365,6 @@ class EmailTemplate extends DataObject
             $email->setTo($this->DefaultRecipient);
         }
 
-        // This should be supported by your email transport if you want it to work
-        if ($this->Disabled) {
-            $email->addCustomHeader('X-SendingDisabled', true);
-        }
-
         $this->extend('updateApplyTemplate', $email);
     }
 
@@ -422,42 +372,47 @@ class EmailTemplate extends DataObject
      * Get rendered body
      *
      * @param bool $parse Should we parse variables or not?
+     * @param bool $injectFake
      * @return string
      */
     public function renderTemplate($parse = false, $injectFake = false)
     {
         // Disable debug bar in the iframe
-        Config::inst()->update('DebugBar', 'auto_inject', false);
+        Config::modify()->set('LeKoala\\DebugBar\\DebugBar', 'auto_inject', false);
 
         $email = $this->getEmail();
         if ($injectFake) {
             $email = $this->setPreviewData($email);
         }
 
-        $debug = $email->debug();
+        $html = $email->getRenderedBody();
 
-        // Actual email content is after the first </p>
-        $paragraphPosition = strpos($debug, '</p>');
-        $html = substr($debug, $paragraphPosition + 4);
-
-        return (string)$html;
+        return $html;
     }
 
     /**
      * Inject random data into email for nicer preview
      *
-     * @param Email $email
-     * @return Email
+     * @param BetterEmail $email
+     * @return BetterEmail
      */
     public function setPreviewData(BetterEmail $email)
     {
         $data = array();
 
-        $body = $email->getOriginalBody();
+        // Get an array of data like ["Body" => "My content", "Callout" => "The callout..."]
+        $emailData = $email->getData();
 
-        // Parse the body for variables
-        foreach ($body as $k => $v) {
+        // Parse the data for variables
+        // For now, simply replace them by their name in curly braces
+        foreach ($emailData as $k => $v) {
+            if (!$v) {
+                continue;
+            }
+
             $matches = null;
+
+            // This match all $Variable or $Member.Firstname kind of vars
             preg_match_all('/\$([a-zA-Z.]*)/', $v, $matches);
             if ($matches && !empty($matches[1])) {
                 foreach ($matches[1] as $name) {
@@ -510,62 +465,10 @@ class EmailTemplate extends DataObject
             $data[$name] = $o;
         }
 
-        return $email->populateTemplate($data);
-    }
-}
-
-class EmailTemplateGridFieldBulkActionHandler extends GridFieldBulkActionHandler
-{
-
-    /**
-     * RequestHandler allowed actions
-     * @var array
-     */
-    private static $allowed_actions = array(
-        'enable',
-        'disable',
-    );
-
-    /**
-     * RequestHandler url => action map
-     * @var array
-     */
-    private static $url_handlers = array(
-        'enable' => 'enable',
-        'disable' => 'disable',
-    );
-
-    public function enable(SS_HTTPRequest $request)
-    {
-        $ids = array();
-
-        foreach ($this->getRecords() as $record) {
-            array_push($ids, $record->ID);
-            $record->enable(false);
+        foreach ($data as $name => $value) {
+            $email->addData($name, $value);
         }
 
-        $response = new SS_HTTPResponse(Convert::raw2json(array(
-            'done' => true,
-            'records' => $ids
-        )));
-        $response->addHeader('Content-Type', 'text/json');
-        return $response;
-    }
-
-    public function disable(SS_HTTPRequest $request)
-    {
-        $ids = array();
-
-        foreach ($this->getRecords() as $record) {
-            array_push($ids, $record->ID);
-            $record->enable(true);
-        }
-
-        $response = new SS_HTTPResponse(Convert::raw2json(array(
-            'done' => true,
-            'records' => $ids
-        )));
-        $response->addHeader('Content-Type', 'text/json');
-        return $response;
+        return $email;
     }
 }

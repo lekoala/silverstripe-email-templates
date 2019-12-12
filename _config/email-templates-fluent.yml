@@ -1,0 +1,11 @@
+---
+Name: email-templates-fluent
+After:
+  - '#versionedfiles'
+Only:
+  moduleexists:
+    - 'tractorcow/silverstripe-fluent'
+---
+LeKoala\EmailTemplates\Models\EmailTemplate:
+  extensions:
+    - 'TractorCow\Fluent\Extension\FluentExtension'

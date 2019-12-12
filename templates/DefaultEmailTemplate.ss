@@ -333,10 +333,10 @@
     <body bgcolor="#f7f7f7">
         <table align="center" cellpadding="0" cellspacing="0" class="container-for-gmail-android" width="100%">
             <tr>
-                <td align="left" valign="top" width="100%" style="background:repeat-x url({$BaseHref}email-templates/images/email/bg-top.jpg) #ffffff;">
+                <td align="left" valign="top" width="100%" style="background:repeat-x url($resourceURL('lekoala/silverstripe-email-templates:images/email/bg-top.jpg') #ffffff;">
                     <center>
-                        <img src="{$BaseHref}email-templates/images/email/transparent.png" class="force-width-gmail">
-                            <table cellspacing="0" cellpadding="0" width="100%" bgcolor="#ffffff" background="{$BaseHref}email-templates/images/email/bg-top.jpg" style="background-color:transparent">
+                        <img src="$resourceURL('lekoala/silverstripe-email-templates:images/email/transparent.png')" class="force-width-gmail">
+                            <table cellspacing="0" cellpadding="0" width="100%" bgcolor="#ffffff" background="$resourceURL('lekoala/silverstripe-email-templates:images/email/bg-top.jpg')" style="background-color:transparent">
                                 <tr>
                                     <td width="100%" height="80" valign="top" style="text-align: center; vertical-align:middle;">
                                         <!--[if gte mso 9]>
@@ -350,7 +350,7 @@
                                                     <td class="pull-left mobile-header-padding-left" style="vertical-align: middle;">
                                                         <a href="$BaseURL">
                                                             <% if SiteConfig.EmailLogoTemplate %>
-                                                            <% with SiteConfig.EmailLogoTemplate.SetHeight(47) %>
+                                                            <% with SiteConfig.EmailLogoTemplate.ScaleHeight(47) %>
                                                             <img src="$Link" height="$Height" width="$Width" alt="$Top.SiteConfig.Title" style="width:auto;margin:0 auto;" />
                                                             <% end_with %>
                                                             <% else %>
@@ -391,16 +391,9 @@
                                     $Subject
                                 </td>
                             </tr>
-                            <% if SideBar %>
                             <tr>
                                 <td class="free-text">
-                                    $SideBar
-                                </td>
-                            </tr>
-                            <% end_if %>
-                            <tr>
-                                <td class="free-text">
-                                    $Body
+                                    $EmailContent.RAW
                                 </td>
                             </tr>
                             <% if Button %>
@@ -425,7 +418,7 @@
                                                     <tr>
                                                         <td>
                                                             <table cellspacing="0" cellpadding="0" width="100%">
-                                                                $Callout
+                                                                $Callout.RAW
                                                             </table>
                                                         </td>
                                                     </tr>

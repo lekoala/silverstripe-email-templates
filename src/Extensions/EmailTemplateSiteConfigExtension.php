@@ -1,5 +1,17 @@
 <?php
 
+namespace LeKoala\EmailTemplates\Extensions;
+
+use Exception;
+use SilverStripe\Forms\FieldList;
+use SilverStripe\Forms\TextField;
+use SilverStripe\Control\Director;
+use SilverStripe\ORM\DataExtension;
+use SilverStripe\Control\Email\Email;
+use SilverStripe\SiteConfig\SiteConfig;
+use LeKoala\EmailTemplates\Models\EmailTemplate;
+use SilverStripe\Forms\HTMLEditor\HTMLEditorField;
+
 /**
  * EmailTemplateSiteConfigExtension
  *
@@ -16,10 +28,7 @@ class EmailTemplateSiteConfigExtension extends DataExtension
 
     public function updateCMSFields(FieldList $fields)
     {
-        // Disabled - don't show fields
-        if (defined('EMAIL_TEMPLATES_UPDATE_FIELDS') && !EMAIL_TEMPLATES_UPDATE_FIELDS) {
-            return $fields;
-        }
+        // Handle field update ourselves
         if (!SiteConfig::config()->email_templates_update_fields) {
             return $fields;
         }
@@ -29,7 +38,7 @@ class EmailTemplateSiteConfigExtension extends DataExtension
             return $fields;
         }
 
-        $EmailFooter = new HtmlEditorField('EmailFooter', _t('EmailTemplateSiteConfigExtension.EmailFooter', 'Email Footer'));
+        $EmailFooter = new HTMLEditorField('EmailFooter', _t('EmailTemplateSiteConfigExtension.EmailFooter', 'Email Footer'));
         $EmailFooter->setRows(3);
         $fields->addFieldToTab('Root.Email', $EmailFooter);
 
@@ -88,7 +97,7 @@ class EmailTemplateSiteConfigExtension extends DataExtension
     public function EmailBaseColor()
     {
         $field = EmailTemplate::config()->base_color_field;
-        if ($field && $this->owner->$field) {
+        if ($field && $this->owner->hasField($field)) {
             return $this->owner->$field;
         }
         return EmailTemplate::config()->base_color;
@@ -101,8 +110,8 @@ class EmailTemplateSiteConfigExtension extends DataExtension
             return $this->owner->EmailLogo();
         }
         // Otherwise, use configurable field
-        $field = EmailTemplate::config()->base_color_field;
-        if ($field && $this->owner->$field) {
+        $field = EmailTemplate::config()->logo_field;
+        if ($field && $this->owner->hasField($field)) {
             $method = str_replace('ID', '', $field);
             return $this->owner->$method();
         }
@@ -114,7 +123,7 @@ class EmailTemplateSiteConfigExtension extends DataExtension
             return;
         }
         $field = EmailTemplate::config()->twitter_field;
-        if ($field && !$this->owner->$field) {
+        if ($field && !$this->owner->hasField($field)) {
             return;
         }
         return 'https://twitter.com/' . $this->owner->$field;
@@ -126,7 +135,7 @@ class EmailTemplateSiteConfigExtension extends DataExtension
             return;
         }
         $field = EmailTemplate::config()->facebook_field;
-        if ($field && !$this->owner->$field) {
+        if ($field && !$this->owner->hasField($field)) {
             return;
         }
         return 'https://www.facebook.com/' . $this->owner->$field;

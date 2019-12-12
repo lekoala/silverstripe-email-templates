@@ -1,8 +1,21 @@
 <?php
 
+namespace LeKoala\EmailTemplates\Models;
+
+use SilverStripe\ORM\DB;
+use SilverStripe\ORM\DataObject;
+use SilverStripe\Forms\FieldList;
+use SilverStripe\Forms\LiteralField;
+use SilverStripe\Control\Email\Email;
+use SilverStripe\Forms\ReadonlyField;
+use SilverStripe\Security\Permission;
+use LeKoala\Base\Actions\CustomAction;
+use LeKoala\EmailTemplates\Admin\EmailTemplatesAdmin;
+
 /**
- * Defines a record that stores an email that was sent via {@link BetterEmail} 
+ * Defines a record that stores an email
  *
+ * @link https://github.com/nyeholt/silverstripe-mailcapture/blob/master/src/Model/CapturedEmail.php
  * @property string $To
  * @property string $From
  * @property string $Subject
@@ -10,17 +23,19 @@
  * @property string $CC
  * @property string $BCC
  * @property string $Results
- * @property string $SerializedEmail
  * @author lekoala
  */
 class SentEmail extends DataObject
 {
+    private static $table_name = 'SentEmail';
 
     private static $db = array(
         'To' => 'Varchar(191)',
         'From' => 'Varchar(191)',
+        'ReplyTo' => 'Varchar(191)',
         'Subject' => 'Varchar(191)',
         'Body' => 'HTMLText',
+        'Headers' => 'Text',
         'CC' => 'Text',
         'BCC' => 'Text',
         'Results' => 'Text',
@@ -28,30 +43,24 @@ class SentEmail extends DataObject
     private static $summary_fields = array(
         'Created.Nice' => 'Date',
         'To' => 'To',
-        'Subject' => 'Subject'
+        'Subject' => 'Subject',
+        'IsSuccess' => 'Success',
     );
     private static $default_sort = 'Created DESC';
-
-    /**
-     * Defines a list of methods that can be invoked by BetterButtons custom actions
-     * @var array
-     */
-    private static $better_buttons_actions = array(
-        'resend'
-    );
 
     /**
      * Gets a list of actions for the ModelAdmin interface
      * @return FieldList
      */
-    public function getBetterButtonsActions()
+    public function getCMSActions()
     {
-        $fields = parent::getBetterButtonsActions();
-        $fields->push(BetterButtonCustomAction::create('resend', 'Resend')
-                ->setRedirectType(BetterButtonCustomAction::REFRESH)
-        );
+        $fields = parent::getCMSActions();
 
-        $this->extend('updateBetterButtonsActions', $fields);
+        if (class_exists(CustomAction::class)) {
+            $fields->push(
+                CustomAction::create('resend', 'Resend')
+            );
+        }
 
         return $fields;
     }
@@ -68,6 +77,7 @@ class SentEmail extends DataObject
         $f = FieldList::create();
 
         $f->push(ReadonlyField::create('Created'));
+        $f->push(ReadonlyField::create('From'));
         $f->push(ReadonlyField::create('To'));
         $f->push(ReadonlyField::create('Subject'));
 
@@ -78,11 +88,13 @@ class SentEmail extends DataObject
             $f->push(ReadonlyField::create('CC'));
         }
 
-        $iframeSrc = '/admin/emails/EmailTemplate/ViewSentEmail/?id=' . $this->ID;
+        $f->push(ReadonlyField::create('Results'));
+
+        $sanitisedModel =  str_replace('\\', '-', SentEmail::class);
+        $adminSegment = EmailTemplatesAdmin::config()->url_segment;
+        $iframeSrc = '/admin/' . $adminSegment . '/' . $sanitisedModel . '/ViewSentEmail/?id=' . $this->ID;
         $iframe = new LiteralField('iframe', '<iframe src="' . $iframeSrc . '" style="width:800px;background:#fff;border:1px solid #ccc;min-height:500px;vertical-align:top"></iframe>');
         $f->push($iframe);
-
-        $f->push(ReadonlyField::create('Results'));
 
         $this->extend('updateCMSFields', $f);
 
@@ -90,8 +102,16 @@ class SentEmail extends DataObject
     }
 
     /**
-     * Gets the {@link BetterEmail} object that was used to send this email
-     * @return Email
+     * @return bool
+     */
+    public function IsSuccess()
+    {
+        return $this->Results == 'true';
+    }
+
+    /**
+     * Gets the BetterEmail object that was used to send this email
+     * @return BetterEmail
      */
     public function getEmail()
     {
@@ -101,6 +121,7 @@ class SentEmail extends DataObject
         $email->setCc($this->CC);
         $email->setBCC($this->BCC);
         $email->setSubject($this->Subject);
+        $email->setReplyTo($this->ReplyTo);
         $email->setBody($this->Body);
 
         return $email;
@@ -124,6 +145,33 @@ class SentEmail extends DataObject
         return 'Could not send email';
     }
 
+
+    /**
+     * Cleanup sent emails based on your config
+     *
+     * @return void
+     */
+    public static function cleanup()
+    {
+        $max = self::config()->max_records;
+        if ($max && self::get()->count() > $max) {
+            $method = self::config()->cleanup_method;
+
+            // Delete all records older than cleanup_time (7 days by default)
+            if ($method == 'time') {
+                $time = self::config()->cleanup_time;
+                $date = date('Y-m-d H:i:s', strtotime($time));
+                DB::query("DELETE FROM \"SentEmail\" WHERE Created < '$date'");
+            }
+
+            // Delete all records that are after half the maximum number of records
+            if ($method == 'max') {
+                $maxID = SentEmail::get()->max('ID') - ($max / 2);
+                DB::query("DELETE FROM \"SentEmail\" WHERE ID < '$maxID'");
+            }
+        }
+    }
+
     /**
      * Defines the view permission
      * @param  Member $member
@@ -131,7 +179,7 @@ class SentEmail extends DataObject
      */
     public function canView($member = null)
     {
-        return Permission::check('CMS_ACCESS_CMSMain');
+        return Permission::check('CMS_ACCESS');
     }
 
     /**
@@ -149,7 +197,7 @@ class SentEmail extends DataObject
      * @param  Member $member
      * @return boolean
      */
-    public function canCreate($member = null)
+    public function canCreate($member = null, $context = [])
     {
         return false;
     }
@@ -161,6 +209,6 @@ class SentEmail extends DataObject
      */
     public function canDelete($member = null)
     {
-        return Permission::check('CMS_ACCESS_CMSMain');
+        return Permission::check('CMS_ACCESS');
     }
 }

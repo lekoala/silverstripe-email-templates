@@ -1,0 +1,12 @@
+Member:
+  default:
+    Email: default@test.com
+EmailTemplate:
+  default:
+    Code: 'Default'
+    Subject: 'Default Subject'
+    Content: 'Default Content'
+  change_password:
+    Code: 'ChangePassword'
+    Subject: 'Hey, your password has been changed'
+    Content: 'Your password has been changed for $AbsoluteBaseURL'

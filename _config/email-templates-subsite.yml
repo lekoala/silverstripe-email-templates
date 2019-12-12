@@ -1,0 +1,14 @@
+---
+Name: email-templates-subsite
+After:
+  - 'silverstripe/subsites'
+Only:
+  moduleexists:
+    - 'silverstripe/subsites'
+---
+LeKoala\EmailTemplates\Models\EmailTemplate:
+  extensions:
+    - LeKoala\EmailTemplates\Extensions\EmailSubsiteExtension
+LeKoala\EmailTemplates\Models\SentEmail:
+  extensions:
+    - LeKoala\EmailTemplates\Extensions\EmailSubsiteExtension
