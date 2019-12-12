@@ -115,7 +115,15 @@ the template doesn't which values are going to be injected.
 Sent emails
 ==================
 
-TODO
+In the admin you can review sent emails
+
+Sent emails table is periodically cleaned up. You can configure the following
+
+    LeKoala\EmailTemplates\Models\SentEmail:
+      max_records: 1000
+      # possible values : 'time' or 'max'
+      cleanup_method: 'max'
+      cleanup_time: '-7 days'
 
 Finding a good template
 ==================
