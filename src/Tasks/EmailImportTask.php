@@ -401,6 +401,25 @@ class EmailImportTask extends BuildTask
                 }
             }
 
+            // No subject? try conventions
+            if (!$emailTemplate->Subject) {
+                switch ($emailTemplate->Code) {
+                    case 'ChangePassword':
+                        $entity = "SilverStripe\\Security\\Member.SUBJECTPASSWORDCHANGED";
+                        break;
+                    case 'ForgotPassword':
+                        $entity = "SilverStripe\\Security\\Member.SUBJECTPASSWORDRESET";
+                        break;
+                    default:
+                        $entity = $emailTemplate->Code . 'Email.SUBJECT';
+                        break;
+                }
+                $subject = _t($entity);
+                if ($subject) {
+                    $emailTemplate->Subject = $subject;
+                }
+            }
+
             // Write each time within the given state
             $emailTemplate->write();
         });
