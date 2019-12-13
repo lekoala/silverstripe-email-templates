@@ -239,7 +239,10 @@ class EmailImportTask extends BuildTask
 
             // Now we use our translation table to manually replace _t calls into file content
             foreach ($translationTable as $entity => $translationData) {
-                $escapedEntity = str_replace('.', '\.', $entity);
+                // use the double escape notation
+                $escapedEntity = str_replace('\\', '\\\\\\\\', $entity);
+                // fix dot notation
+                $escapedEntity = str_replace('.', '\.', $escapedEntity);
                 $baseTranslation = null;
 
                 foreach ($translationData as $locale => $translation) {
@@ -344,9 +347,9 @@ class EmailImportTask extends BuildTask
 
         $framework = self::config()->import_framework;
         if ($framework) {
-            $templates = array_merge($templates, glob(Director::baseFolder() . '/vendor/silverstripe/framework/templates/SilverStripe/Control/Email/*Email.ss'));
+            // use ? to avoid matching plain Email.ss
+            $templates = array_merge($templates, glob(Director::baseFolder() . '/vendor/silverstripe/framework/templates/SilverStripe/Control/Email/?*Email.ss'));
         }
-
         $extra = self::config()->extra_paths;
         foreach ($extra as $path) {
             $path = trim($path, '/');
@@ -383,8 +386,9 @@ class EmailImportTask extends BuildTask
             $emailTemplate->Content = '';
             $emailTemplate->Content = $cleanContent;
 
-            $dom = new DOMDocument;
-            $dom->loadHTML(mb_convert_encoding('<div>' . $content . '</div>', 'HTML-ENTITIES', 'UTF-8'));
+            $source = '<div>' . $content . '</div>';
+            $dom = new DomDocument('1.0', 'UTF-8');
+            $dom->loadHTML(mb_convert_encoding($source, 'HTML-ENTITIES', 'UTF-8'));
 
             // Look for nodes to assign to proper fields (will overwrite content)
             $fields = array('Content', 'Callout', 'Subject');
