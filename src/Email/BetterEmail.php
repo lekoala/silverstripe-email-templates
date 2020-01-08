@@ -514,6 +514,8 @@ class BetterEmail extends Email
     /**
      * Set a member as a recipient.
      *
+     * It will also set the $Recipient variable in the template
+     *
      * @param Member $member
      * @param string $locale Locale to use, set to false to keep current locale
      * @return BetterEmail
@@ -551,6 +553,8 @@ class BetterEmail extends Email
 
     /**
      * Set From Member
+     *
+     * It will also set the $Sender variable in the template
      *
      * @param Member $member
      * @return BetterEmail
