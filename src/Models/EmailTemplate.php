@@ -312,6 +312,9 @@ class EmailTemplate extends DataObject
             throw new Exception("Make sure you are injecting the BetterEmail class instead of your base Email class");
         }
         $this->applyTemplate($email);
+        if ($this->Disabled) {
+            $email->setDisabled(true);
+        }
         return $email;
     }
 
