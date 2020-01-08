@@ -9,6 +9,8 @@ LeKoala\EmailTemplates\Email\BetterEmail:
   template: 'DefaultEmailTemplate'
 LeKoala\EmailTemplates\Models\EmailTemplate:
   helper_show_methods: false
+  # add your custom aliases here
+  default_models: []
   # template options
   base_color: '#ff6f6f'
   show_facebook: true

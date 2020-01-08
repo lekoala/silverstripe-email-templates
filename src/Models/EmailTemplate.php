@@ -141,7 +141,7 @@ class EmailTemplate extends DataObject
     {
         $fields = ['Content', 'Callout'];
 
-        $models = [];
+        $models = self::config()->default_models;
 
         // Build a list of non namespaced models
         // They are not likely to clash anyway because of their unique table name
