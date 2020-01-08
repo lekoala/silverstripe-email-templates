@@ -233,7 +233,6 @@ class EmailTemplate extends DataObject
 
         $models = $this->getAvailableModels();
 
-        d($models);
         $modelsByClass = array();
         $classes = array();
         foreach ($models as $name => $model) {
