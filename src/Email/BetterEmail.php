@@ -2,6 +2,7 @@
 
 namespace LeKoala\EmailTemplates\Email;
 
+use BadMethodCallException;
 use Exception;
 use Swift_MimePart;
 use LeKoala\EmailTemplates\Helpers\EmailUtils;
@@ -43,6 +44,10 @@ use LeKoala\EmailTemplates\Models\EmailTemplate;
  */
 class BetterEmail extends Email
 {
+    const STATE_CANCELLED = 'cancelled';
+    const STATE_NOT_SENT = 'not_sent';
+    const STATE_SENT = 'sent';
+    const STATE_FAILED = 'failed';
 
     /**
      * @var EmailTemplate
@@ -68,6 +73,16 @@ class BetterEmail extends Email
      * @var boolean
      */
     protected $disabled = false;
+
+    /**
+     * @var SentMail
+     */
+    protected $sentMail = null;
+
+    /**
+     * @var boolean
+     */
+    protected $sendingCancelled = false;
 
     /**
      * Email constructor.
@@ -151,7 +166,9 @@ class BetterEmail extends Email
     }
 
     /**
-     * Sends an HTML email
+     * Sends a HTML email
+     *
+     * @return bool true if successful or array of failed recipients
      */
     public function send()
     {
@@ -160,7 +177,8 @@ class BetterEmail extends Email
 
     /**
      * Sends a plain text email
-     * @param int $messageID
+     *
+     * @return bool true if successful or array of failed recipients
      */
     public function sendPlain()
     {
@@ -170,24 +188,26 @@ class BetterEmail extends Email
     /**
      * Send this email
      *
-     * @param boolean $plain
-     * @return boolean
+     * @param bool $plain
+     * @return bool true if successful or array of failed recipients
      * @throws Exception
      */
     public function doSend($plain = false)
     {
         if ($this->disabled) {
+            $this->sendingCancelled = true;
             return false;
         }
 
         // Check for Subject
         if (!$this->getSubject()) {
-            throw new Exception('You must set a subject');
+            throw new BadMethodCallException('You must set a subject');
         }
 
         // This hook can prevent email from being sent
         $result = $this->extend('onBeforeDoSend', $this);
         if ($result === false) {
+            $this->sendingCancelled = true;
             return false;
         }
 
@@ -237,9 +257,48 @@ class BetterEmail extends Email
         }
 
         $this->extend('onAfterDoSend', $this, $res);
-        $this->persist($res);
+        $this->sentMail = $this->persist($res);
 
         return $res;
+    }
+
+    /**
+     * Returns one of the STATE_xxxx constant
+     *
+     * @return string
+     */
+    public function getSendStatus()
+    {
+        if ($this->sendingCancelled) {
+            return self::STATE_CANCELLED;
+        }
+        if ($this->sentMail) {
+            if ($this->sentMail->IsSuccess()) {
+                return self::STATE_SENT;
+            }
+            return self::STATE_FAILED;
+        }
+        return self::STATE_NOT_SENT;
+    }
+
+    /**
+     * Was sending cancelled ?
+     *
+     * @return bool
+     */
+    public function getSendingCancelled()
+    {
+        return $this->sendingCancelled;
+    }
+
+    /**
+     * The last result from "send" method. Null if not sent yet or sending was cancelled
+     *
+     * @return SentMail
+     */
+    public function getSentMail()
+    {
+        return $this->sentMail;
     }
 
     /**
