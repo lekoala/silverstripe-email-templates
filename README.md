@@ -122,8 +122,8 @@ You can inject values with whatever name (MyMember => Member) but it won't be vi
 the template doesn't which values are going to be injected, except if you register your aliases in:
 
     LeKoala\EmailTemplates\Models\EmailTemplate:
-        default_models:
-            - MyMember: SilverStripe\Security\Member
+      default_models:
+        MyMember: SilverStripe\Security\Member
 
 Sent emails
 ==================
