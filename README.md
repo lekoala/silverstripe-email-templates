@@ -38,7 +38,16 @@ The content is imported in the "Content" area. You can also define divs with ids
         <%t MyTestEmail.CONTENT "My translated content" %>
     </div>
 
-I recommend that you store the email title alongside the content of the email, it makes things much easier to follow
+I recommend that you store the email title alongside the content of the email, it makes things much easier to follow.
+
+Also keep in mind that your content is escaped by default. So in your template you might need to do this:
+
+    Hello $Member.Firstname,
+
+    Here are your infos:
+    $Member.SummaryTable.RAW
+
+This will allow to render html content provided by the Member::SummaryTable method.
 
 Available config flags:
 - import_framework: should we import base framework templates
@@ -74,14 +83,14 @@ So this means that:
 ```php
 $email = Email::create('from@outwebsite.com', 'recipient@email.com');
 // Will look for a template with code Welcome
-$email->setHTMLTemplate('WelcomeEmail');
+$email->setHTMLTemplate('Welcome');
 $email->send();
 ```
 
 Is the same as:
 
 ```php
-$email = EmailTemplate::getEmailByCode('WelcomeEmail');
+$email = EmailTemplate::getEmailByCode('Welcome');
 $email->setToMember(Member::currentUser());
 $email->send();
 ```

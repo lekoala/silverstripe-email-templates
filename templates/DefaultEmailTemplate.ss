@@ -37,7 +37,6 @@
                 font-family: Helvetica, Arial, sans-serif;
                 font-size: 14px;
                 color: #777777;
-                text-align: center;
                 line-height: 21px;
             }
 
@@ -78,8 +77,9 @@
                 font-size: 32px;
                 font-weight: 700;
                 line-height: normal;
-                padding: 35px 0 0;
+                padding: 35px 60px 0;
                 color: #4d4d4d;
+                text-align:center;
             }
             .header-md {
                 font-size: 24px;
@@ -387,12 +387,12 @@
                     <center>
                         <table cellspacing="0" cellpadding="0" width="600" class="w320">
                             <tr>
-                                <td class="header-lg">
+                                <td align="left" class="header-lg">
                                     $Subject
                                 </td>
                             </tr>
                             <tr>
-                                <td class="free-text">
+                                <td align="left" class="free-text">
                                     $EmailContent.RAW
                                 </td>
                             </tr>
