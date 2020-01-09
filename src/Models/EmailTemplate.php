@@ -17,6 +17,8 @@ use SilverStripe\Forms\DropdownField;
 use SilverStripe\Security\Permission;
 use LeKoala\EmailTemplates\Email\BetterEmail;
 use LeKoala\EmailTemplates\Admin\EmailTemplatesAdmin;
+use SilverStripe\Forms\CheckboxField;
+use SilverStripe\Forms\TextField;
 use SilverStripe\SiteConfig\SiteConfig;
 
 /**
@@ -86,9 +88,6 @@ class EmailTemplate extends DataObject
         // Do not allow changing subsite
         $fields->removeByName('SubsiteID');
 
-        $categories = EmailTemplate::get()->column('Category');
-        $fields->replaceField('Category', new DropdownField('Category', 'Category', array_combine($categories, $categories)));
-
         $fields->dataFieldByName('Callout')->setRows(5);
 
         $codeField = $fields->dataFieldByName('Code');
@@ -106,6 +105,14 @@ class EmailTemplate extends DataObject
         if ($this->ID) {
             $fields->addFieldToTab('Root.Preview', $this->previewTab());
         }
+
+        // Cleanup UI
+        $categories = EmailTemplate::get()->column('Category');
+        $fields->addFieldsToTab('Root.Settings', new DropdownField('Category', 'Category', array_combine($categories, $categories)));
+        $fields->addFieldsToTab('Root.Settings', new CheckboxField('Disabled'));
+        $fields->addFieldsToTab('Root.Settings', new TextField('DefaultSender'));
+        $fields->addFieldsToTab('Root.Settings', new TextField('DefaultRecipient'));
+
 
         return $fields;
     }
