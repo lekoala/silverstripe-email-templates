@@ -49,6 +49,10 @@ Also keep in mind that your content is escaped by default. So in your template y
 
 This will allow to render html content provided by the Member::SummaryTable method.
 
+Also watch for nasty ending dots, don't forget to escape if necessary
+
+    Without this, {$It.Will.Crash}. <-- because of me
+
 Available config flags:
 - import_framework: should we import base framework templates
 - extra_paths: extra path to look for *Email.ss templates
