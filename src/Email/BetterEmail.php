@@ -590,7 +590,7 @@ class BetterEmail extends Email
 
         $this->addData(array('Recipient' => $member));
 
-        return $this->setTo($member->Email, $member->getTitle());
+        return parent::setTo($member->Email, $member->getTitle());
     }
 
     /**
