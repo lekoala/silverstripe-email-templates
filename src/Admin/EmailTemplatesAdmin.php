@@ -23,7 +23,7 @@ class EmailTemplatesAdmin extends ModelAdmin
     );
     private static $url_segment = 'email-templates';
     private static $menu_title = 'Emails';
-    private static $menu_icon = 'email-templates/images/mail.png';
+    private static $menu_icon = 'lekoala/silverstripe-email-templates:images/mail.png';
     private static $allowed_actions = array(
         'ImportForm',
         'SearchForm',
