@@ -3,11 +3,12 @@
 namespace LeKoala\EmailTemplates\Admin;
 
 use Exception;
+use LeKoala\EmailTemplates\Helpers\FluentHelper;
 use SilverStripe\Admin\ModelAdmin;
 use SilverStripe\View\Requirements;
+use LeKoala\EmailTemplates\Models\Emailing;
 use LeKoala\EmailTemplates\Models\SentEmail;
 use LeKoala\EmailTemplates\Models\EmailTemplate;
-use SilverStripe\ORM\FieldType\DBHTMLText;
 
 /**
  * Manage your email templates
@@ -20,6 +21,7 @@ class EmailTemplatesAdmin extends ModelAdmin
     private static $managed_models = array(
         EmailTemplate::class,
         SentEmail::class,
+        Emailing::class,
     );
     private static $url_segment = 'email-templates';
     private static $menu_title = 'Emails';
@@ -28,6 +30,8 @@ class EmailTemplatesAdmin extends ModelAdmin
         'ImportForm',
         'SearchForm',
         'PreviewEmail',
+        'PreviewEmailing',
+        'SendEmailing',
         'ViewSentEmail',
         'SentTestEmail',
     );
@@ -44,6 +48,45 @@ class EmailTemplatesAdmin extends ModelAdmin
     }
 
     /**
+     * Called by EmailTemplate
+     *
+     * @return string
+     */
+    public function SendEmailing()
+    {
+        $id = (int) $this->getRequest()->getVar('id');
+
+        /* @var $Emailing Emailing */
+        $Emailing = Emailing::get()->byID($id);
+        $emails = $Emailing->getEmailByLocales();
+
+        $errors = 0;
+        foreach ($emails as $locale => $email) {
+            // Wrap with withLocale to make sure any environment variable (urls, etc) are properly set when sending
+            $res = null;
+            FluentHelper::withLocale($locale, function () use ($email, &$res) {
+                try {
+                    $res = $email->send();
+                } catch (Exception $ex) {
+                    return $ex->getMessage();
+                }
+                return $res;
+            });
+            if (!$res) {
+                $errors++;
+            }
+        }
+
+        if ($errors == 0) {
+            $Emailing->LastSent = date('Y-m-d H:i:s');
+            $Emailing->write();
+
+            return _t('EmailTemplatesAdmin.EMAILING_SENT', 'Emailing sent');
+        }
+        return _t('EmailTemplatesAdmin.EMAILING_ERROR', 'There was an error sending email');
+    }
+
+    /**
      * Called by EmailTemplate::previewTab
      *
      * @return string
@@ -55,9 +98,30 @@ class EmailTemplatesAdmin extends ModelAdmin
 
         $id = (int) $this->getRequest()->getVar('id');
 
-        /* @var $emailTemplate EmailTemplate */
-        $emailTemplate = EmailTemplate::get()->byID($id);
-        $html = $emailTemplate->renderTemplate(true, true);
+        /* @var $EmailTemplate EmailTemplate */
+        $EmailTemplate = EmailTemplate::get()->byID($id);
+        $html = $EmailTemplate->renderTemplate(true);
+
+        Requirements::restore();
+
+        return $html;
+    }
+
+    /**
+     * Called by Emailing::previewTab
+     *
+     * @return string
+     */
+    public function PreviewEmailing()
+    {
+        // Prevent CMS styles to interfere with preview
+        Requirements::clear();
+
+        $id = (int) $this->getRequest()->getVar('id');
+
+        /* @var $Emailing Emailing */
+        $Emailing = Emailing::get()->byID($id);
+        $html = $Emailing->renderTemplate(true);
 
         Requirements::restore();
 

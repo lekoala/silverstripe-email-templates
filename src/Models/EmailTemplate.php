@@ -382,11 +382,10 @@ class EmailTemplate extends DataObject
     /**
      * Get rendered body
      *
-     * @param bool $parse Should we parse variables or not?
      * @param bool $injectFake
      * @return string
      */
-    public function renderTemplate($parse = false, $injectFake = false)
+    public function renderTemplate($injectFake = false)
     {
         // Disable debug bar in the iframe
         Config::modify()->set('LeKoala\\DebugBar\\DebugBar', 'auto_inject', false);

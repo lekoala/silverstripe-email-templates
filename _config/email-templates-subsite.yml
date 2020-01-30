@@ -12,3 +12,6 @@ LeKoala\EmailTemplates\Models\EmailTemplate:
 LeKoala\EmailTemplates\Models\SentEmail:
   extensions:
     - LeKoala\EmailTemplates\Extensions\EmailSubsiteExtension
+LeKoala\EmailTemplates\Models\Emailing:
+  extensions:
+    - LeKoala\EmailTemplates\Extensions\EmailSubsiteExtension

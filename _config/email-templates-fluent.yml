@@ -9,3 +9,6 @@ Only:
 LeKoala\EmailTemplates\Models\EmailTemplate:
   extensions:
     - 'TractorCow\Fluent\Extension\FluentExtension'
+LeKoala\EmailTemplates\Models\Emailing:
+  extensions:
+    - 'TractorCow\Fluent\Extension\FluentExtension'

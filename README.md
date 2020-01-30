@@ -16,6 +16,7 @@ Features
 - Store sent emails for tracking
 - Compatible with Fluent module
 - Compatible Subsite module (TODO)
+- Emailing
 
 Predefined templates
 ==================
@@ -141,6 +142,12 @@ Sent emails table is periodically cleaned up. You can configure the following
       # possible values : 'time' or 'max'
       cleanup_method: 'max'
       cleanup_time: '-7 days'
+
+Emailings
+==================
+
+This module also support basic emailing capabilities. It will leverage your email template to allow you to send
+emails to your members or selection of members.
 
 Finding a good template
 ==================
