@@ -2,15 +2,16 @@
 
 namespace LeKoala\EmailTemplates\Models;
 
-use SilverStripe\ORM\DB;
-use SilverStripe\ORM\DataObject;
-use SilverStripe\Forms\FieldList;
-use SilverStripe\Forms\LiteralField;
-use SilverStripe\Control\Email\Email;
-use SilverStripe\Forms\ReadonlyField;
-use SilverStripe\Security\Permission;
 use LeKoala\Base\Actions\CustomAction;
 use LeKoala\EmailTemplates\Admin\EmailTemplatesAdmin;
+use SilverStripe\Control\Director;
+use SilverStripe\Control\Email\Email;
+use SilverStripe\Forms\FieldList;
+use SilverStripe\Forms\LiteralField;
+use SilverStripe\Forms\ReadonlyField;
+use SilverStripe\ORM\DB;
+use SilverStripe\ORM\DataObject;
+use SilverStripe\Security\Permission;
 
 /**
  * Defines a record that stores an email
@@ -92,7 +93,7 @@ class SentEmail extends DataObject
 
         $sanitisedModel =  str_replace('\\', '-', SentEmail::class);
         $adminSegment = EmailTemplatesAdmin::config()->url_segment;
-        $iframeSrc = '/admin/' . $adminSegment . '/' . $sanitisedModel . '/ViewSentEmail/?id=' . $this->ID;
+        $iframeSrc = Director::baseURL() . '/admin/' . $adminSegment . '/' . $sanitisedModel . '/ViewSentEmail/?id=' . $this->ID;
         $iframe = new LiteralField('iframe', '<iframe src="' . $iframeSrc . '" style="width:800px;background:#fff;border:1px solid #ccc;min-height:500px;vertical-align:top"></iframe>');
         $f->push($iframe);
 
