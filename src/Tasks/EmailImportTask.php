@@ -386,7 +386,7 @@ class EmailImportTask extends BuildTask
             $emailTemplate->Content = '';
             $emailTemplate->Content = $cleanContent;
 
-            $source = '<div>' . $content . '</div>';
+            $source = '<!DOCTYPE html><html><body>' . $content . '</body></html>';
             $dom = new DomDocument('1.0', 'UTF-8');
             $dom->loadHTML(mb_convert_encoding($source, 'HTML-ENTITIES', 'UTF-8'));
 
