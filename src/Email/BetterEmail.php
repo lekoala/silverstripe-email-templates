@@ -383,7 +383,16 @@ class BetterEmail extends Email
     public function renderWithData($content)
     {
         $viewer = SSViewer::fromString($content);
-        $result = (string) $viewer->process($this, $this->getData());
+        $data = $this->getData();
+        // SSViewer_DataPresenter requires array
+        if (is_object($data)) {
+            if (method_exists($data, 'toArray')) {
+                $data = $data->toArray();
+            } else {
+                $data = (array) $data;
+            }
+        }
+        $result = (string) $viewer->process($this, $data);
         $result = self::rewriteURLs($result);
         return $result;
     }
