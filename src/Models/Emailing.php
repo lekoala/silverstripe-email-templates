@@ -87,7 +87,7 @@ class Emailing extends DataObject
         $fields->removeByName('SubsiteID');
 
         // Recipients
-        $recipientsList = self::listRecipients();
+        $recipientsList = $this->listRecipients();
         $fields->replaceField('Recipients', $Recipients = new DropdownField('Recipients', null, $recipientsList));
         $Recipients->setDescription(_t('Emailing.EMAIL_COUNT', "Email will be sent to {count} members", ['count' => $this->getAllRecipients()->count()]));
 
@@ -117,19 +117,25 @@ class Emailing extends DataObject
                 $list = Member::get()->filter('Locale', $locale);
             }
         }
+        $recipients = $this->Recipients;
         if (!$list) {
-            switch ($this->Recipients) {
+            switch ($recipients) {
                 case 'ALL_MEMBERS':
                     $list = Member::get();
                     break;
                 case 'SELECTED_MEMBERS':
-                    $list = Member::get()->filter('ID', $this->getNormalizedRecipientsList());
+                    $IDs =  $this->getNormalizedRecipientsList();
+                    if (empty($IDs)) {
+                        $IDs = 0;
+                    }
+                    $list = Member::get()->filter('ID', $IDs);
                     break;
                 default:
                     $list = Member::get()->filter('ID', 0);
                     break;
             }
         }
+        $this->extend('updateGetAllRecipients', $list, $locales, $recipients);
         return $list;
     }
 
@@ -148,6 +154,9 @@ class Emailing extends DataObject
         foreach ($perLine as $line) {
             $items = explode(',', $line);
             foreach ($items as $item) {
+                if (!$item) {
+                    continue;
+                }
                 if (is_numeric($item)) {
                     $arr[] = $item;
                 } elseif (strpos($item, '@') !== false) {
@@ -171,7 +180,7 @@ class Emailing extends DataObject
     /**
      * @return array
      */
-    public static function listRecipients()
+    public function listRecipients()
     {
         $arr = [];
         $arr['ALL_MEMBERS'] = _t('Emailing.ALL_MEMBERS', 'All members');
@@ -180,6 +189,7 @@ class Emailing extends DataObject
         foreach ($locales as $locale) {
             $arr[$locale . '_MEMBERS'] = _t('Emailing.LOCALE_MEMBERS', '{locale} members', ['locale' => $locale]);
         }
+        $this->extend("updateListRecipients", $arr, $locales);
         return $arr;
     }
 

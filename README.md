@@ -149,12 +149,36 @@ Emailings
 This module also support basic emailing capabilities. It will leverage your email template to allow you to send
 emails to your members or selection of members.
 
+If you want to add new group, add an extension to Emailing class and implement the following extension points
+
+    /**
+     * @param array $groups
+     * @param array $locales
+     * @return void
+     */
+    public function updateListRecipients(&$groups, $locales)
+    {
+    }
+
+    /**
+     * @param array $groups
+     * @param array $locales
+     * @param string $recipients
+     * @return void
+     */
+    public function updateGetAllRecipients(&$list, $locales, $recipients)
+    {
+    }
+
 Finding a good template
 ==================
 
 I highly recommend the following [open source email templates from dyspatch](https://www.dyspatch.io/resources/templates/oxygen/)
 
 The one provided with this module is "Oxygen" but you can easily adapt the template to your needs.
+
+Simple create a template DefaultEmailTemplate.ss in your templates, and you are good to go ! Don't forget to use .RAW for html parts
+Also "Content" is registered as $EmailContent, so it's $EmailContent.RAW in your templates
 
 Sending emails?
 ==================

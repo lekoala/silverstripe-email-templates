@@ -9,6 +9,7 @@ use SilverStripe\View\Requirements;
 use LeKoala\EmailTemplates\Models\Emailing;
 use LeKoala\EmailTemplates\Models\SentEmail;
 use LeKoala\EmailTemplates\Models\EmailTemplate;
+use SilverStripe\Control\Director;
 
 /**
  * Manage your email templates
@@ -77,13 +78,20 @@ class EmailTemplatesAdmin extends ModelAdmin
             }
         }
 
+        $message =  _t('EmailTemplatesAdmin.EMAILING_ERROR', 'There was an error sending email');
+
         if ($errors == 0) {
             $Emailing->LastSent = date('Y-m-d H:i:s');
             $Emailing->write();
 
-            return _t('EmailTemplatesAdmin.EMAILING_SENT', 'Emailing sent');
+            $message = _t('EmailTemplatesAdmin.EMAILING_SENT', 'Emailing sent');
         }
-        return _t('EmailTemplatesAdmin.EMAILING_ERROR', 'There was an error sending email');
+
+        if (Director::is_ajax()) {
+            return $message;
+        }
+
+        return $this->redirectBack();
     }
 
     /**
