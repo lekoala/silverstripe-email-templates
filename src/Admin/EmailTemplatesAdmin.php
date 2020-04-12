@@ -34,7 +34,7 @@ class EmailTemplatesAdmin extends ModelAdmin
         'PreviewEmailing',
         'SendEmailing',
         'ViewSentEmail',
-        'SentTestEmail',
+        'SendTestEmailTemplate',
     );
 
     public function subsiteCMSShowInMenu()
@@ -136,7 +136,7 @@ class EmailTemplatesAdmin extends ModelAdmin
         return $html;
     }
 
-    public function SentTestEmail()
+    public function SendTestEmailTemplate()
     {
         $id = (int) $this->getRequest()->getVar('id');
 

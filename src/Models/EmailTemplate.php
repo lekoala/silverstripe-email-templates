@@ -17,6 +17,7 @@ use SilverStripe\Forms\DropdownField;
 use SilverStripe\Security\Permission;
 use LeKoala\EmailTemplates\Email\BetterEmail;
 use LeKoala\EmailTemplates\Admin\EmailTemplatesAdmin;
+use SilverStripe\Core\Environment;
 use SilverStripe\Forms\CheckboxField;
 use SilverStripe\Forms\TextField;
 use SilverStripe\SiteConfig\SiteConfig;
@@ -304,6 +305,13 @@ class EmailTemplate extends DataObject
         $iframeSrc = '/admin/' . $adminSegment . '/' . $sanitisedModel . '/PreviewEmail/?id=' . $this->ID;
         $iframe = new LiteralField('iframe', '<iframe src="' . $iframeSrc . '" style="width:800px;background:#fff;border:1px solid #ccc;min-height:500px;vertical-align:top"></iframe>');
         $tab->push($iframe);
+
+        $env = Environment::getEnv('SS_SEND_ALL_EMAILS_TO');
+        if ($env) {
+            $sendTestLink = '/admin/' . $adminSegment . '/' . $sanitisedModel . '/SendTestEmailTemplate/?id=' . $this->ID;
+            $sendTest = new LiteralField("send_test", "<hr/><a href='$sendTestLink'>Send test email to $env</a>");
+            $tab->push($sendTest);
+        }
 
         return $tab;
     }
