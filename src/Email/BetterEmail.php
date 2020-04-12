@@ -2,13 +2,13 @@
 
 namespace LeKoala\EmailTemplates\Email;
 
-use BadMethodCallException;
 use Exception;
 use Swift_MimePart;
-use LeKoala\EmailTemplates\Helpers\EmailUtils;
+use BadMethodCallException;
 use SilverStripe\i18n\i18n;
 use SilverStripe\Control\HTTP;
 use SilverStripe\View\SSViewer;
+use SilverStripe\ORM\DataObject;
 use SilverStripe\Security\Member;
 use SilverStripe\Control\Director;
 use SilverStripe\Security\Security;
@@ -18,8 +18,9 @@ use SilverStripe\Core\Config\Config;
 use SilverStripe\Control\Email\Email;
 use SilverStripe\SiteConfig\SiteConfig;
 use LeKoala\EmailTemplates\Models\SentEmail;
-use LeKoala\EmailTemplates\Helpers\SubsiteHelper;
+use LeKoala\EmailTemplates\Helpers\EmailUtils;
 use LeKoala\EmailTemplates\Models\EmailTemplate;
+use LeKoala\EmailTemplates\Helpers\SubsiteHelper;
 
 /**
  * An improved and more pleasant base Email class to use on your project
@@ -162,7 +163,28 @@ class BetterEmail extends Email
      */
     public function addBody($body)
     {
-        return $this->owner->addData("EmailContent", $body);
+        return $this->addData("EmailContent", $body);
+    }
+
+    /**
+     * @param array|ViewableData $data The template data to set
+     * @return $this
+     */
+    public function setData($data)
+    {
+        // Merge data!
+        if ($this->emailTemplate) {
+            if (is_array($data)) {
+                parent::addData($data);
+            } elseif ($data instanceof DataObject) {
+                parent::addData($data->toMap());
+            } else {
+                parent::setData($data);
+            }
+        } else {
+            parent::setData($data);
+        }
+        return $this;
     }
 
     /**
