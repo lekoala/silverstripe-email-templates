@@ -466,6 +466,8 @@ class BetterEmail extends Email
 
         // Render subject with data as well
         $subject = $this->renderWithData($this->getSubject());
+        // Html entities in email titles is not a good idea
+        $subject = html_entity_decode($subject, ENT_QUOTES | ENT_XML1, 'UTF-8');
         parent::setSubject($subject);
 
         // Plain part fails over to generated from html
