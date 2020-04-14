@@ -170,6 +170,34 @@ If you want to add new group, add an extension to Emailing class and implement t
     {
     }
 
+Merge vars:
+This module supports merge vars using *|MERGETAG|* notation in Emailings
+It expects your email gateway to support the X-MC-MergeVars convention.
+You can change the email header being used.
+
+    LeKoala\EmailTemplates\Models\Emailing:
+      mail_merge_header: 'X-Mail-Header-Here'
+
+By default, we use the mandrill template syntax replacement. If you use other
+gateways you may need to replace them. For example, mailgun would be this:
+
+    LeKoala\EmailTemplates\Models\Emailing:
+      mail_merge_syntax: '%recipient.MERGETAG%'
+
+Batch sending:
+By default, this module will send emails in batch of 1000. You can change this with
+
+    LeKoala\EmailTemplates\Models\Emailing:
+      batch_count: 1000
+
+Sending as bcc:
+By default, this module send email as bcc in order to avoid displaying
+recipients. If your email gateway (like, mailgun) supports hiding recipients, you can
+use a real recipient with the following yml config
+
+    LeKoala\EmailTemplates\Models\Emailing:
+      send_bcc: false
+
 Finding a good template
 ==================
 

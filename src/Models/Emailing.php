@@ -154,6 +154,9 @@ class Emailing extends DataObject
         foreach ($perLine as $line) {
             $items = explode(',', $line);
             foreach ($items as $item) {
+                // Prevent whitespaces from messing up our queries
+                $item = trim($item);
+
                 if (!$item) {
                     continue;
                 }
@@ -209,6 +212,17 @@ class Emailing extends DataObject
         $iframe = new LiteralField('iframe', '<iframe src="' . $iframeSrc . '" style="width:800px;background:#fff;border:1px solid #ccc;min-height:500px;vertical-align:top"></iframe>');
         $tab->push($iframe);
 
+        // Merge var helper
+        $vars = $this->collectMergeVars();
+        $syntax = self::config()->mail_merge_syntax;
+        if (empty($vars)) {
+            $varsHelperContent = "You can use $syntax notation to use mail merge variable for the recipients";
+        } else {
+            $varsHelperContent = "The following mail merge variables are used : " . implode(", ", $vars);
+        }
+        $varsHelper = new LiteralField("varsHelpers", '<div><br/><br/>' . $varsHelperContent . '</div>');
+        $tab->push($varsHelper);
+
         return $tab;
     }
 
@@ -247,6 +261,34 @@ class Emailing extends DataObject
         return $html;
     }
 
+    /**
+     * Collect all merge vars
+     *
+     * @return array
+     */
+    public function collectMergeVars()
+    {
+        $fields = ['Subject', 'Content', 'Callout'];
+
+        $syntax = self::config()->mail_merge_syntax;
+
+        $regex = $syntax;
+        $regex = preg_quote($regex);
+        $regex = str_replace("MERGETAG", "([\w\.]+)", $regex);
+
+        $allMatches = [];
+        foreach ($fields as $field) {
+            $content = $this->$field;
+            $matches = [];
+            preg_match_all('/' . $regex . '/', $content, $matches);
+            if (!empty($matches[1])) {
+                $allMatches = array_merge($allMatches, $matches[1]);
+            }
+        }
+
+        return $allMatches;
+    }
+
 
     /**
      * Returns an instance of an Email with the content of the emailing
@@ -272,12 +314,37 @@ class Emailing extends DataObject
     }
 
     /**
-     * Returns an array of email with members by locale
+     * Various email providers use various types of mail merge headers
+     * By default, we use mandrill that is expected to work for other platforms through compat layer
+     *
+     * X-Mailgun-Recipient-Variables: {"bob@example.com": {"first":"Bob", "id":1}, "alice@example.com": {"first":"Alice", "id": 2}}
+     * Template syntax: %recipient.first%
+     * @link https://documentation.mailgun.com/en/latest/user_manual.html#batch-sending
+     *
+     * X-MC-MergeVars [{"rcpt":"recipient.email@example.com","vars":[{"name":"merge2","content":"merge2 content"}]}]
+     * Template syntax: *|MERGETAG|*
+     * @link https://mandrill.zendesk.com/hc/en-us/articles/205582117-How-to-Use-SMTP-Headers-to-Customize-Your-Messages
+     *
+     * @link https://developers.sparkpost.com/api/smtp/#header-using-the-x-msys-api-custom-header
+     *
+     * @return string
+     */
+    public function getMergeVarsHeader()
+    {
+        return self::config()->mail_merge_header;
+    }
+
+    /**
+     * Returns an array of emails with members by locale, grouped by a given number of recipients
+     * Some apis prevent sending too many emails at the same time
      *
      * @return array
      */
-    public function getEmailByLocales()
+    public function getEmailsByLocales()
     {
+        $batchCount = self::config()->batch_count ?? 1000;
+        $sendBcc = self::config()->send_bcc;
+
         $membersByLocale = [];
         foreach ($this->getAllRecipients() as $r) {
             if (!isset($membersByLocale[$r->Locale])) {
@@ -286,29 +353,53 @@ class Emailing extends DataObject
             $membersByLocale[$r->Locale][] = $r;
         }
 
+        $mergeVars = $this->collectMergeVars();
+        $mergeVarHeader = $this->getMergeVarsHeader();
+
         $emails = [];
         foreach ($membersByLocale as $locale => $membersList) {
-            $email = Email::create();
-            if (!$email instanceof BetterEmail) {
-                throw new Exception("Make sure you are injecting the BetterEmail class instead of your base Email class");
+            $emails[$locale] = [];
+            $chunks = array_chunk($membersList, $batchCount);
+            foreach ($chunks as $chunk) {
+                $email = Email::create();
+                if (!$email instanceof BetterEmail) {
+                    throw new Exception("Make sure you are injecting the BetterEmail class instead of your base Email class");
+                }
+                if ($this->Sender) {
+                    $email->setFrom($this->Sender);
+                }
+                $mergeVarsData = [];
+                foreach ($chunk as $r) {
+                    if ($sendBcc) {
+                        $email->addBCC($r->Email, $r->FirstName . ' ' . $r->Surname);
+                    } else {
+                        $email->addTo($r->Email, $r->FirstName . ' ' . $r->Surname);
+                    }
+                    if (!empty($mergeVars)) {
+                        $vars = [];
+                        foreach ($mergeVars as $mergeVar) {
+                            $vars[$mergeVar] = $r->$mergeVar;
+                        }
+                        $mergeVarsData[] = [
+                            'rcpt' => $r->Email,
+                            'vars' => $vars
+                        ];
+                    }
+                }
+                // Merge vars
+                if (!empty($mergeVars)) {
+                    $email->getSwiftMessage()->getHeaders()->addTextHeader($mergeVarHeader, json_encode($mergeVarsData));
+                }
+                // Localize
+                $EmailingID = $this->ID;
+                FluentHelper::withLocale($locale, function () use ($EmailingID, $email) {
+                    $Emailing = Emailing::get()->byID($EmailingID);
+                    $email->setSubject($Emailing->Subject);
+                    $email->addData('EmailContent', $Emailing->Content);
+                    $email->addData('Callout', $Emailing->Callout);
+                });
+                $emails[$locale][] = $email;
             }
-            if ($this->Sender) {
-                $email->setFrom($this->Sender);
-            }
-            foreach ($membersList as $r) {
-                $email->addBCC($r->Email, $r->FirstName . ' ' . $r->Surname);
-            }
-
-            // Localize
-            $EmailingID = $this->ID;
-            FluentHelper::withLocale($locale, function () use ($EmailingID, $email) {
-                $Emailing = Emailing::get()->byID($EmailingID);
-                $email->setSubject($Emailing->Subject);
-                $email->addData('EmailContent', $Emailing->Content);
-                $email->addData('Callout', $Emailing->Callout);
-            });
-
-            $emails[$locale] = $email;
         }
         return $emails;
     }

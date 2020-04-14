@@ -3,13 +3,14 @@
 namespace LeKoala\EmailTemplates\Admin;
 
 use Exception;
-use LeKoala\EmailTemplates\Helpers\FluentHelper;
 use SilverStripe\Admin\ModelAdmin;
+use SilverStripe\Control\Director;
 use SilverStripe\View\Requirements;
+use SilverStripe\Control\HTTPResponse;
 use LeKoala\EmailTemplates\Models\Emailing;
 use LeKoala\EmailTemplates\Models\SentEmail;
+use LeKoala\EmailTemplates\Helpers\FluentHelper;
 use LeKoala\EmailTemplates\Models\EmailTemplate;
-use SilverStripe\Control\Director;
 
 /**
  * Manage your email templates
@@ -59,39 +60,48 @@ class EmailTemplatesAdmin extends ModelAdmin
 
         /* @var $Emailing Emailing */
         $Emailing = Emailing::get()->byID($id);
-        $emails = $Emailing->getEmailByLocales();
+        $emails = $Emailing->getEmailsByLocales();
 
         $errors = 0;
-        foreach ($emails as $locale => $email) {
-            // Wrap with withLocale to make sure any environment variable (urls, etc) are properly set when sending
-            $res = null;
-            FluentHelper::withLocale($locale, function () use ($email, &$res) {
-                try {
-                    $res = $email->send();
-                } catch (Exception $ex) {
-                    return $ex->getMessage();
+        $messages = [];
+        foreach ($emails as $locale => $emails) {
+            foreach ($emails as $email) {
+                $res = null;
+                $msg = null;
+                // Wrap with withLocale to make sure any environment variable (urls, etc) are properly set when sending
+                FluentHelper::withLocale($locale, function () use ($email, &$res, &$msg) {
+                    try {
+                        $res = $email->send();
+                    } catch (Exception $ex) {
+                        $res = false;
+                        $msg = $ex->getMessage();
+                    }
+                });
+                if (!$res) {
+                    $errors++;
+                    $messages[] = $msg;
                 }
-                return $res;
-            });
-            if (!$res) {
-                $errors++;
             }
         }
-
-        $message =  _t('EmailTemplatesAdmin.EMAILING_ERROR', 'There was an error sending email');
 
         if ($errors == 0) {
             $Emailing->LastSent = date('Y-m-d H:i:s');
             $Emailing->write();
-
             $message = _t('EmailTemplatesAdmin.EMAILING_SENT', 'Emailing sent');
+        } else {
+            $message =  _t('EmailTemplatesAdmin.EMAILING_ERROR', 'There was an error sending email');
+            $message .= ": " . implode(", ", $messages);
         }
 
         if (Director::is_ajax()) {
-            return $message;
+            $this->getResponse()->addHeader('X-Status', rawurlencode($message));
+            if ($errors > 0) {
+                // $this->getResponse()->setStatusCode(400);
+            }
+            return $this->getResponse();
         }
 
-        return $this->redirectBack();
+        return $message;
     }
 
     /**

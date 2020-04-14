@@ -29,6 +29,11 @@ LeKoala\EmailTemplates\Models\SentEmail:
   # possible values : 'time' or 'max'
   cleanup_method: 'max'
   cleanup_time: '-7 days'
+LeKoala\EmailTemplates\Models\Emailing:
+  batch_count: 1000
+  mail_merge_header: 'X-MC-MergeVars'
+  mail_merge_syntax: '*|MERGETAG|*'
+  send_bcc: true
 SilverStripe\Core\Injector\Injector:
   SilverStripe\Control\Email\Email:
     class: LeKoala\EmailTemplates\Email\BetterEmail
