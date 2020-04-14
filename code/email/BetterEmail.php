@@ -241,6 +241,8 @@ class BetterEmail extends Email
                 try {
                     $viewer = SSViewer::fromString($this->subject);
                     $this->subject = $viewer->process($data);
+                    // html entities in email titles is not a good idea
+                    $this->subject = html_entity_decode($this->subject, ENT_QUOTES | ENT_XML1, 'UTF-8');
                 } catch (Exception $ex) {
                     SS_Log::log($ex->getMessage(), SS_Log::DEBUG);
                 }
