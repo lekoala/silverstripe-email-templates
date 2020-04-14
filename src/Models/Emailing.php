@@ -121,7 +121,7 @@ class Emailing extends DataObject
         if (!$list) {
             switch ($recipients) {
                 case 'ALL_MEMBERS':
-                    $list = Member::get();
+                    $list = Member::get()->exclude('Email', '');
                     break;
                 case 'SELECTED_MEMBERS':
                     $IDs =  $this->getNormalizedRecipientsList();
