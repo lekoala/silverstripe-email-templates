@@ -369,7 +369,9 @@ class Emailing extends DataObject
                     throw new Exception("Make sure you are injecting the BetterEmail class instead of your base Email class");
                 }
                 if ($this->Sender) {
-                    $email->setFrom($this->Sender);
+                    $senderEmail = EmailUtils::get_email_from_rfc_email($this->Sender);
+                    $senderName = EmailUtils::get_displayname_from_rfc_email($this->Sender);
+                    $email->setFrom($senderEmail, $senderName);
                 }
                 $mergeVarsData = [];
                 foreach ($chunk as $r) {
