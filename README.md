@@ -192,8 +192,7 @@ By default, this module will send emails in batch of 1000. You can change this w
 
 Sending as bcc:
 By default, this module send email as bcc in order to avoid displaying
-recipients. If your email gateway (like, mailgun) supports hiding recipients, you can
-use a real recipient with the following yml config
+recipients. You can set this behaviour to false if needed.
 
     LeKoala\EmailTemplates\Models\Emailing:
       send_bcc: false

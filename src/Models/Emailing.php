@@ -21,6 +21,7 @@ use SilverStripe\SiteConfig\SiteConfig;
 use LeKoala\EmailTemplates\Email\BetterEmail;
 use LeKoala\EmailTemplates\Helpers\FluentHelper;
 use LeKoala\EmailTemplates\Admin\EmailTemplatesAdmin;
+use LeKoala\EmailTemplates\Helpers\EmailUtils;
 use SilverStripe\Forms\FormAction;
 
 /**
@@ -302,7 +303,9 @@ class Emailing extends DataObject
             throw new Exception("Make sure you are injecting the BetterEmail class instead of your base Email class");
         }
         if ($this->Sender) {
-            $email->setFrom($this->Sender);
+            $senderEmail = EmailUtils::get_email_from_rfc_email($this->Sender);
+            $senderName = EmailUtils::get_displayname_from_rfc_email($this->Sender);
+            $email->setFrom($senderEmail, $senderName);
         }
         foreach ($this->getAllRecipients() as $r) {
             $email->addBCC($r->Email, $r->FirstName . ' ' . $r->Surname);
@@ -378,7 +381,13 @@ class Emailing extends DataObject
                     if (!empty($mergeVars)) {
                         $vars = [];
                         foreach ($mergeVars as $mergeVar) {
-                            $vars[$mergeVar] = $r->$mergeVar;
+                            $v = null;
+                            if ($r->hasMethod($mergeVar)) {
+                                $v = $r->$mergeVar();
+                            } else {
+                                $v = $r->$mergeVar;
+                            }
+                            $vars[$mergeVar] = $v;
                         }
                         $mergeVarsData[] = [
                             'rcpt' => $r->Email,
