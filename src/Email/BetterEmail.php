@@ -600,7 +600,41 @@ class BetterEmail extends Email
      */
     public function setToAdmin()
     {
-        return $this->setToMember(Security::findAnAdministrator());
+        $admin = Security::findAnAdministrator();
+        return $this->setToMember($admin);
+    }
+
+    /**
+     * Set to
+     *
+     * @return Email
+     */
+    public function setToContact()
+    {
+        $email = SiteConfig::current_site_config()->EmailDefaultRecipient();
+        return $this->setTo($email);
+    }
+
+    /**
+     * Add in bcc admin
+     *
+     * @return Email
+     */
+    public function bccToAdmin()
+    {
+        $admin = Security::findAnAdministrator();
+        return $this->addBCC($admin->Email);
+    }
+
+    /**
+     * Add in bcc admin
+     *
+     * @return Email
+     */
+    public function bccToContact()
+    {
+        $email = SiteConfig::current_site_config()->EmailDefaultRecipient();
+        return $this->addBCC($email);
     }
 
     /**
