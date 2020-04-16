@@ -17,6 +17,7 @@ use SilverStripe\Forms\DropdownField;
 use SilverStripe\Security\Permission;
 use LeKoala\EmailTemplates\Email\BetterEmail;
 use LeKoala\EmailTemplates\Admin\EmailTemplatesAdmin;
+use SilverStripe\Control\Director;
 use SilverStripe\Core\Environment;
 use SilverStripe\Forms\CheckboxField;
 use SilverStripe\Forms\TextField;
@@ -307,9 +308,9 @@ class EmailTemplate extends DataObject
         $tab->push($iframe);
 
         $env = Environment::getEnv('SS_SEND_ALL_EMAILS_TO');
-        if ($env) {
-            $sendTestLink = '/admin/' . $adminSegment . '/' . $sanitisedModel . '/SendTestEmailTemplate/?id=' . $this->ID;
-            $sendTest = new LiteralField("send_test", "<hr/><a href='$sendTestLink'>Send test email to $env</a>");
+        if ($env || Director::isDev()) {
+            $sendTestLink = '/admin/' . $adminSegment . '/' . $sanitisedModel . '/SendTestEmailTemplate/?id=' . $this->ID . '&to=' . urlencode($env);
+            $sendTest = new LiteralField("send_test", "<hr/><a href='$sendTestLink'>Send test email</a>");
             $tab->push($sendTest);
         }
 
@@ -327,6 +328,7 @@ class EmailTemplate extends DataObject
         if (!$email instanceof BetterEmail) {
             throw new Exception("Make sure you are injecting the BetterEmail class instead of your base Email class");
         }
+
         $this->applyTemplate($email);
         if ($this->Disabled) {
             $email->setDisabled(true);
@@ -377,8 +379,12 @@ class EmailTemplate extends DataObject
             'Callout' => $this->dbObject('Callout')->forTemplate(),
         ]);
 
+        // Email are initialized with admin_email if set, we may want to use our own sender
         if ($this->DefaultSender) {
             $email->setFrom($this->DefaultSender);
+        } else {
+            $SiteConfig = SiteConfig::current_site_config();
+            $email->setFrom($SiteConfig->EmailDefaultSender());
         }
         if ($this->DefaultRecipient) {
             $email->setTo($this->DefaultRecipient);

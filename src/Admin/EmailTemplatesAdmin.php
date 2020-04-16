@@ -11,6 +11,7 @@ use LeKoala\EmailTemplates\Models\Emailing;
 use LeKoala\EmailTemplates\Models\SentEmail;
 use LeKoala\EmailTemplates\Helpers\FluentHelper;
 use LeKoala\EmailTemplates\Models\EmailTemplate;
+use SilverStripe\Security\Member;
 
 /**
  * Manage your email templates
@@ -59,7 +60,7 @@ class EmailTemplatesAdmin extends ModelAdmin
         $id = (int) $this->getRequest()->getVar('id');
 
         /* @var $Emailing Emailing */
-        $Emailing = Emailing::get()->byID($id);
+        $Emailing = self::getEmailingById($id);
         $emails = $Emailing->getEmailsByLocales();
 
         $errors = 0;
@@ -116,8 +117,7 @@ class EmailTemplatesAdmin extends ModelAdmin
 
         $id = (int) $this->getRequest()->getVar('id');
 
-        /* @var $EmailTemplate EmailTemplate */
-        $EmailTemplate = EmailTemplate::get()->byID($id);
+        $EmailTemplate = self::getEmailTemplateById($id);
         $html = $EmailTemplate->renderTemplate(true);
 
         Requirements::restore();
@@ -137,8 +137,7 @@ class EmailTemplatesAdmin extends ModelAdmin
 
         $id = (int) $this->getRequest()->getVar('id');
 
-        /* @var $Emailing Emailing */
-        $Emailing = Emailing::get()->byID($id);
+        $Emailing = self::getEmailingById($id);
         $html = $Emailing->renderTemplate(true);
 
         Requirements::restore();
@@ -149,12 +148,26 @@ class EmailTemplatesAdmin extends ModelAdmin
     public function SendTestEmailTemplate()
     {
         $id = (int) $this->getRequest()->getVar('id');
+        $to = (string) $this->getRequest()->getVar('to');
 
-        /* @var $emailTemplate EmailTemplate */
-        $emailTemplate = EmailTemplate::get()->byID($id);
+        if (!$to) {
+            die("Please set a ?to=some@email.com");
+        }
+
+        $member = Member::get()->filter('Email', $to)->first();
+
+        $emailTemplate = self::getEmailTemplateById($id);
 
         $email = $emailTemplate->getEmail();
+
+        d($email);
         $emailTemplate->setPreviewData($email);
+        if ($member) {
+            $email->setToMember($member);
+            $email->addData("Member", $member);
+        } else {
+            $email->setTo($to);
+        }
         $result = $email->send();
 
         print_r($result);
@@ -173,12 +186,38 @@ class EmailTemplatesAdmin extends ModelAdmin
 
         $id = (int) $this->getRequest()->getVar('id');
 
-        /* @var $SentEmail SentEmail */
-        $SentEmail = SentEmail::get()->byID($id);
+        $SentEmail = self::getSentEmailById($id);
         $html = $SentEmail->Body;
 
         Requirements::restore();
 
         return $html;
+    }
+
+    /**
+     * @param int $id
+     * @return Emailing
+     */
+    protected static function getEmailingById($id)
+    {
+        return Emailing::get()->byID($id);
+    }
+
+    /**
+     * @param int $id
+     * @return EmailTemplate
+     */
+    protected static function getEmailTemplateById($id)
+    {
+        return EmailTemplate::get()->byID($id);
+    }
+
+    /**
+     * @param int $id
+     * @return EmailTemplate
+     */
+    protected static function getSentEmailById($id)
+    {
+        return SentEmail::get()->byID($id);
     }
 }

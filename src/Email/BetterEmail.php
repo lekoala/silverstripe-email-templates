@@ -238,7 +238,7 @@ class BetterEmail extends Email
         // Check for Sender and use default if necessary
         $from = $this->getFrom();
         if (empty($from)) {
-            $this->addFrom($SiteConfig->EmailDefaultSender());
+            $this->setFrom($SiteConfig->EmailDefaultSender());
         }
 
         // Check for Recipient and use default if necessary
@@ -657,7 +657,23 @@ class BetterEmail extends Email
 
         $this->addData(array('Sender' => $member));
 
-        return $this->setFrom($member->Email);
+        return $this->setFrom($member->Email, $member->getTitle());
+    }
+
+    /**
+     * Improved set from that supports Name <my@domain.com> notation
+     *
+     * @param string|array $address
+     * @param string|null $name
+     * @return $this
+     */
+    public function setFrom($address, $name = null)
+    {
+        if ($name === null && is_string($address)) {
+            $name = EmailUtils::get_displayname_from_rfc_email($address);
+            $address = EmailUtils::get_email_from_rfc_email($address);
+        }
+        return parent::setFrom($address, $name);
     }
 
     /**
