@@ -577,6 +577,11 @@ class BetterEmail extends Email
         if ($this->to_member) {
             $this->to_member = null;
         }
+        // Allow Name <my@email.com>
+        if (!$name && is_string($address)) {
+            $name = EmailUtils::get_displayname_from_rfc_email($address);
+            $address = EmailUtils::get_email_from_rfc_email($address);
+        }
         return parent::setTo($address, $name);
     }
 
@@ -703,7 +708,7 @@ class BetterEmail extends Email
      */
     public function setFrom($address, $name = null)
     {
-        if ($name === null && is_string($address)) {
+        if (!$name && is_string($address)) {
             $name = EmailUtils::get_displayname_from_rfc_email($address);
             $address = EmailUtils::get_email_from_rfc_email($address);
         }
