@@ -575,17 +575,26 @@ class BetterEmail extends Email
      */
     public function setTo($address, $name = null)
     {
-        // Make sure this doesn't conflict with to_member property
-        if ($this->to_member) {
-            $this->to_member = null;
-        }
         // Allow Name <my@email.com>
         if (!$name && is_string($address)) {
             $name = EmailUtils::get_displayname_from_rfc_email($address);
             $address = EmailUtils::get_email_from_rfc_email($address);
         }
+        // Make sure this doesn't conflict with to_member property
+        if ($this->to_member) {
+            if (is_string($address)) {
+                // We passed an email that doesn't match to member
+                if ($this->to_member->Email != $address) {
+                    $this->to_member = null;
+                }
+            } else {
+                $this->to_member = null;
+            }
+        }
         return parent::setTo($address, $name);
     }
+
+
 
     /**
      * @param string $subject The Subject line for the email
@@ -664,7 +673,7 @@ class BetterEmail extends Email
 
         $this->addData(array('Recipient' => $member));
 
-        return parent::setTo($member->Email, $member->getTitle());
+        return $this->setTo($member->Email, $member->getTitle());
     }
 
     /**
