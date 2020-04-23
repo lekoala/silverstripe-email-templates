@@ -167,6 +167,24 @@ class BetterEmail extends Email
     }
 
     /**
+     * @param string $body The email body
+     * @return $this
+     */
+    public function setBody($body)
+    {
+        $plainPart = $this->findPlainPart();
+        if ($plainPart) {
+            $this->getSwiftMessage()->detach($plainPart);
+        }
+        unset($plainPart);
+
+        $body = self::rewriteURLs($body);
+        $this->getSwiftMessage()->setBody($body);
+
+        return $this;
+    }
+
+    /**
      * @param array|ViewableData $data The template data to set
      * @return $this
      */
