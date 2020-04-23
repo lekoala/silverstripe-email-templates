@@ -131,7 +131,8 @@ class EmailTemplate extends DataObject
 
     public function canCreate($member = null, $context = [])
     {
-        return Permission::check('CMS_ACCESS', 'any', $member);
+        // Should be created by developer
+        return false;
     }
 
     public function canDelete($member = null)
