@@ -736,9 +736,17 @@ class BetterEmail extends Email
     protected static function safeAbsoluteURL($url, $relativeToSiteBase = false)
     {
         if (empty($url)) {
-            return Director::baseURL();
+            $absUrl = Director::baseURL();
+        } else {
+            $firstCharacter = substr($url, 0, 1);
+
+            // It's a merge tag, don't touch it because we don't know what kind of url it contains
+            if (in_array($firstCharacter, ['*', '$', '%'])) {
+                return $url;
+            }
+
+            $absUrl = Director::absoluteURL($url, $relativeToSiteBase);
         }
-        $absUrl = Director::absoluteURL($url, $relativeToSiteBase);
 
         // If we use subsite, absolute url may not use the proper url
         if (SubsiteHelper::usesSubsite()) {
