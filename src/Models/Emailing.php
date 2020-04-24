@@ -313,6 +313,7 @@ class Emailing extends DataObject
         $email->setSubject($this->Subject);
         $email->addData('EmailContent', $this->Content);
         $email->addData('Callout', $this->Callout);
+        $email->addData('IsEmailing', true);
         return $email;
     }
 
@@ -408,6 +409,7 @@ class Emailing extends DataObject
                     $email->setSubject($Emailing->Subject);
                     $email->addData('EmailContent', $Emailing->Content);
                     $email->addData('Callout', $Emailing->Callout);
+                    $email->addData('IsEmailing', true);
                 });
                 $emails[$locale][] = $email;
             }
