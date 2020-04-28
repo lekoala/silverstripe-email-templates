@@ -79,18 +79,20 @@ class FluentHelper
      * Execute the callback for all locales
      *
      * @param callable $cb
-     * @return void
+     * @return array an array of callback results
      */
     public static function withLocales($cb)
     {
         if (!self::usesFluent()) {
             $cb();
-            return;
+            return [];
         }
         $allLocales = Locale::get();
+        $results = [];
         foreach ($allLocales as $locale) {
-            self::withLocale($locale, $cb);
+            $results[] = self::withLocale($locale, $cb);
         }
+        return $results;
     }
 
     /**
