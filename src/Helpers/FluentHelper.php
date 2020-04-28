@@ -57,7 +57,7 @@ class FluentHelper
      *
      * @param string|Locale $locale
      * @param callable $cb
-     * @return void
+     * @return mixed callback result
      */
     public static function withLocale($locale, $cb)
     {
@@ -66,12 +66,12 @@ class FluentHelper
             return;
         }
         $state = FluentState::singleton();
-        $state->withState(function ($state) use ($locale, $cb) {
+        return $state->withState(function ($state) use ($locale, $cb) {
             if (is_object($locale)) {
                 $locale = $locale->Locale;
             }
             $state->setLocale($locale);
-            $cb();
+            return $cb();
         });
     }
 

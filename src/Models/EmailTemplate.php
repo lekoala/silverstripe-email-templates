@@ -8,20 +8,21 @@ use SilverStripe\i18n\i18n;
 use SilverStripe\Core\ClassInfo;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\View\ArrayData;
+use SilverStripe\Forms\TextField;
 use SilverStripe\Security\Member;
+use SilverStripe\Control\Director;
+use SilverStripe\Core\Environment;
 use SilverStripe\Forms\HeaderField;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Control\Email\Email;
+use SilverStripe\Forms\CheckboxField;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Security\Permission;
-use LeKoala\EmailTemplates\Email\BetterEmail;
-use LeKoala\EmailTemplates\Admin\EmailTemplatesAdmin;
-use SilverStripe\Control\Director;
-use SilverStripe\Core\Environment;
-use SilverStripe\Forms\CheckboxField;
-use SilverStripe\Forms\TextField;
 use SilverStripe\SiteConfig\SiteConfig;
+use LeKoala\EmailTemplates\Email\BetterEmail;
+use LeKoala\EmailTemplates\Helpers\FluentHelper;
+use LeKoala\EmailTemplates\Admin\EmailTemplatesAdmin;
 
 /**
  * User defined email templates
@@ -192,11 +193,18 @@ class EmailTemplate extends DataObject
      *
      * @param string $code
      * @param bool $alwaysReturn
+     * @param string $locale
      * @return EmailTemplate
      */
-    public static function getByCode($code, $alwaysReturn = true)
+    public static function getByCode($code, $alwaysReturn = true, $locale = null)
     {
-        $template = EmailTemplate::get()->filter('Code', $code)->first();
+        if ($locale) {
+            $template = FluentHelper::withLocale($locale, function () use ($code) {
+                return EmailTemplate::get()->filter('Code', $code)->first();
+            });
+        } else {
+            $template = EmailTemplate::get()->filter('Code', $code)->first();
+        }
         // Always return a template
         if (!$template && $alwaysReturn) {
             $template = new EmailTemplate();
@@ -213,11 +221,12 @@ class EmailTemplate extends DataObject
      * A shorthand to get an email by code
      *
      * @param string $code
+     * @param string $locale
      * @return BetterEmail
      */
-    public static function getEmailByCode($code)
+    public static function getEmailByCode($code, $locale = null)
     {
-        return self::getByCode($code)->getEmail();
+        return self::getByCode($code, true, $locale)->getEmail();
     }
 
     public function onBeforeWrite()
