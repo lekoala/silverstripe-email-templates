@@ -58,7 +58,7 @@ class EmailTemplatesAdmin extends ModelAdmin
      */
     public function SendEmailing()
     {
-        Environment::setTimeLimitMax(0);
+        Environment::increaseTimeLimitTo();
 
         $id = (int) $this->getRequest()->getVar('id');
 
