@@ -11,6 +11,7 @@ use LeKoala\EmailTemplates\Models\Emailing;
 use LeKoala\EmailTemplates\Models\SentEmail;
 use LeKoala\EmailTemplates\Helpers\FluentHelper;
 use LeKoala\EmailTemplates\Models\EmailTemplate;
+use SilverStripe\Core\Environment;
 use SilverStripe\Security\Member;
 
 /**
@@ -57,6 +58,8 @@ class EmailTemplatesAdmin extends ModelAdmin
      */
     public function SendEmailing()
     {
+        Environment::setTimeLimitMax(0);
+
         $id = (int) $this->getRequest()->getVar('id');
 
         /* @var $Emailing Emailing */
