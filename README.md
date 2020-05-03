@@ -102,6 +102,18 @@ $email->send();
 
 This nice trick is required in order for you to have consistent "Change password" and "Forgot password" emails since these are provided by the framework
 with no easy way to override them. It also means you can let the user add his own copy without editing translation files.
+In order for this to work, you need to import email templates from the framework. Please see the EmailImportTask to see how this works in more details.
+You can also add yourself the two following email templates with the codes ChangePassword and ForgotPassword.
+This works because we override the setHTMLTemplate method in order to look for a given email template matching this code.
+
+So in LostPasswordHandler, we have:
+
+```php
+$email = Email::create()
+    ->setHTMLTemplate('SilverStripe\\Control\\Email\\ForgotPasswordEmail')
+```
+
+And the system will look for an email template "ForgotPassword".
 
 SiteConfig extension
 ==================
