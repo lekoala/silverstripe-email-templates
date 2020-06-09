@@ -23,6 +23,7 @@ use LeKoala\EmailTemplates\Helpers\FluentHelper;
 use LeKoala\EmailTemplates\Admin\EmailTemplatesAdmin;
 use LeKoala\EmailTemplates\Helpers\EmailUtils;
 use SilverStripe\Forms\FormAction;
+use Swift_Validate;
 
 /**
  * Send emails to a group of members
@@ -103,6 +104,19 @@ class Emailing extends DataObject
         $fields->addFieldsToTab('Root.Settings', $RecipientsList = new TextareaField('RecipientsList'));
         $RecipientsList->setDescription(_t('Emailing.RECIPIENTSLISTHELP', 'A list of IDs or emails on each line or separated by commas. Select "Selected members" to use this list'));
 
+        if ($this->ID) {
+            $invalidRecipients = $this->listRecipientsWithInvalidEmails();
+            if (!empty($invalidRecipients)) {
+                $invalidRecipientsContent = '';
+                foreach ($invalidRecipients as $ir) {
+                    $invalidRecipientsContent .= "<h3>" . $ir->FirstName . ' ' . $ir->Surname . '</h3>';
+                    $invalidRecipientsContent .= "<p>" . $ir->Email . "</p>";
+                    $invalidRecipientsContent .= "<hr/>";
+                }
+                $fields->addFieldsToTab('Root.InvalidRecipients', new LiteralField("InvalidRecipients", $invalidRecipientsContent));
+            }
+        }
+
         return $fields;
     }
 
@@ -137,6 +151,23 @@ class Emailing extends DataObject
             }
         }
         $this->extend('updateGetAllRecipients', $list, $locales, $recipients);
+        return $list;
+    }
+
+    /**
+     * List all invalid recipients
+     *
+     * @return array
+     */
+    public function listRecipientsWithInvalidEmails()
+    {
+        $list = [];
+        foreach ($this->getAllRecipients() as $r) {
+            $res = Swift_Validate::email($r->Email);
+            if (!$res) {
+                $list[] = $r;
+            }
+        }
         return $list;
     }
 
