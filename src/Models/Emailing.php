@@ -99,9 +99,9 @@ class Emailing extends DataObject
             $fields->addFieldToTab('Root.Preview', $this->previewTab());
         }
 
-        $fields->addFieldsToTab('Root.Settings', new TextField('Sender'));
-        $fields->addFieldsToTab('Root.Settings', new ReadonlyField('LastSent'));
-        $fields->addFieldsToTab('Root.Settings', $RecipientsList = new TextareaField('RecipientsList'));
+        $fields->addFieldToTab('Root.Settings', new TextField('Sender'));
+        $fields->addFieldToTab('Root.Settings', new ReadonlyField('LastSent'));
+        $fields->addFieldToTab('Root.Settings', $RecipientsList = new TextareaField('RecipientsList'));
         $RecipientsList->setDescription(_t('Emailing.RECIPIENTSLISTHELP', 'A list of IDs or emails on each line or separated by commas. Select "Selected members" to use this list'));
 
         if ($this->ID) {
@@ -113,7 +113,7 @@ class Emailing extends DataObject
                     $invalidRecipientsContent .= "<p>" . $ir->Email . "</p>";
                     $invalidRecipientsContent .= "<hr/>";
                 }
-                $fields->addFieldsToTab('Root.InvalidRecipients', new LiteralField("InvalidRecipients", $invalidRecipientsContent));
+                $fields->addFieldToTab('Root.InvalidRecipients', new LiteralField("InvalidRecipients", $invalidRecipientsContent));
             }
         }
 
