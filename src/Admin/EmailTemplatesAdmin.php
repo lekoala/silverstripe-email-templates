@@ -163,7 +163,6 @@ class EmailTemplatesAdmin extends ModelAdmin
 
         $email = $emailTemplate->getEmail();
 
-        d($email);
         $emailTemplate->setPreviewData($email);
         if ($member) {
             $email->setToMember($member);

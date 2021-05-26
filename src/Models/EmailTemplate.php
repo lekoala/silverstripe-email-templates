@@ -313,13 +313,13 @@ class EmailTemplate extends DataObject
         // Preview iframe
         $sanitisedModel =  str_replace('\\', '-', EmailTemplate::class);
         $adminSegment = EmailTemplatesAdmin::config()->url_segment;
-        $iframeSrc = '/admin/' . $adminSegment . '/' . $sanitisedModel . '/PreviewEmail/?id=' . $this->ID;
+        $iframeSrc = Director::baseURL() . 'admin/' . $adminSegment . '/' . $sanitisedModel . '/PreviewEmail/?id=' . $this->ID;
         $iframe = new LiteralField('iframe', '<iframe src="' . $iframeSrc . '" style="width:800px;background:#fff;border:1px solid #ccc;min-height:500px;vertical-align:top"></iframe>');
         $tab->push($iframe);
 
         $env = Environment::getEnv('SS_SEND_ALL_EMAILS_TO');
         if ($env || Director::isDev()) {
-            $sendTestLink = '/admin/' . $adminSegment . '/' . $sanitisedModel . '/SendTestEmailTemplate/?id=' . $this->ID . '&to=' . urlencode($env);
+            $sendTestLink = Director::baseURL() . 'admin/' . $adminSegment . '/' . $sanitisedModel . '/SendTestEmailTemplate/?id=' . $this->ID . '&to=' . urlencode($env);
             $sendTest = new LiteralField("send_test", "<hr/><a href='$sendTestLink'>Send test email</a>");
             $tab->push($sendTest);
         }
