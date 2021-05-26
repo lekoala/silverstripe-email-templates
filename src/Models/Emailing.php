@@ -109,8 +109,12 @@ class Emailing extends DataObject
             if (!empty($invalidRecipients)) {
                 $invalidRecipientsContent = '';
                 foreach ($invalidRecipients as $ir) {
-                    $invalidRecipientsContent .= "<h3>" . $ir->FirstName . ' ' . $ir->Surname . '</h3>';
-                    $invalidRecipientsContent .= "<p>" . $ir->Email . "</p>";
+                    $email = $ir->Email;
+                    if (!$email && strlen($email) <= 0) {
+                        $email = '(no email)';
+                    }
+                    $invalidRecipientsContent .= "<h3>" . $ir->FirstName . ' ' . $ir->Surname . ' (#' . $ir->ID . ')</h3>';
+                    $invalidRecipientsContent .= "<p>" . $email . "</p>";
                     $invalidRecipientsContent .= "<hr/>";
                 }
                 $fields->addFieldToTab('Root.InvalidRecipients', new LiteralField("InvalidRecipients", $invalidRecipientsContent));
@@ -136,7 +140,7 @@ class Emailing extends DataObject
         if (!$list) {
             switch ($recipients) {
                 case 'ALL_MEMBERS':
-                    $list = Member::get()->exclude('Email', '');
+                    $list = Member::get()->exclude('Email', ['', null]);
                     break;
                 case 'SELECTED_MEMBERS':
                     $IDs =  $this->getNormalizedRecipientsList();
@@ -164,7 +168,7 @@ class Emailing extends DataObject
         $list = [];
         foreach ($this->getAllRecipients() as $r) {
             $res = Swift_Validate::email($r->Email);
-            if (!$res) {
+            if (!$res || !$r->Email) {
                 $list[] = $r;
             }
         }
