@@ -381,7 +381,7 @@ class Emailing extends DataObject
      */
     public function getEmailsByLocales()
     {
-        $batchCount = self::config()->batch_count ?? 1000;
+        $batchCount = self::config()->batch_count ?? 200;
         $sendBcc = self::config()->send_bcc;
 
         $membersByLocale = [];
