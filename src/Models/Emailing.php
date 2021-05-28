@@ -46,6 +46,8 @@ class Emailing extends DataObject
         'RecipientsList' => 'Text',
         'Sender' => 'Varchar(255)',
         'LastSent' => 'Datetime',
+        'LastSentCount' => 'Int',
+        'LastError' => 'Text',
         // Content
         'Content' => 'HTMLText',
         'Callout' => 'HTMLText',
@@ -381,7 +383,7 @@ class Emailing extends DataObject
      */
     public function getEmailsByLocales()
     {
-        $batchCount = self::config()->batch_count ?? 200;
+        $batchCount = self::config()->batch_count ?? 100;
         $sendBcc = self::config()->send_bcc;
 
         $membersByLocale = [];

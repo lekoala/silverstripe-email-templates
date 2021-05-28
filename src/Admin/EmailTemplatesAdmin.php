@@ -90,9 +90,13 @@ class EmailTemplatesAdmin extends ModelAdmin
 
         if ($errors == 0) {
             $Emailing->LastSent = date('Y-m-d H:i:s');
+            $Emailing->LastSentCount = count($emails);
             $Emailing->write();
             $message = _t('EmailTemplatesAdmin.EMAILING_SENT', 'Emailing sent');
         } else {
+            $Emailing->LastError = implode(", ", $messages);
+            $Emailing->write();
+
             $message =  _t('EmailTemplatesAdmin.EMAILING_ERROR', 'There was an error sending email');
             $message .= ": " . implode(", ", $messages);
         }

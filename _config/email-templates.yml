@@ -30,7 +30,7 @@ LeKoala\EmailTemplates\Models\SentEmail:
   cleanup_method: 'max'
   cleanup_time: '-7 days'
 LeKoala\EmailTemplates\Models\Emailing:
-  batch_count: 200
+  batch_count: 100
   mail_merge_header: 'X-MC-MergeVars'
   mail_merge_syntax: '*|MERGETAG|*'
   send_bcc: true
