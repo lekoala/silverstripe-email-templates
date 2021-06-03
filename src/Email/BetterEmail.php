@@ -124,7 +124,7 @@ class BetterEmail extends Email
         $record = SentEmail::create(array(
             'To' => EmailUtils::format_email_addresses($this->getTo()),
             'From' => EmailUtils::format_email_addresses($this->getFrom()),
-            'ReplyTo' => $this->getReplyTo(),
+            'ReplyTo' => EmailUtils::format_email_addresses($this->getReplyTo()),
             'Subject' => $this->getSubject(),
             'Body' => $this->getRenderedBody(),
             'Headers' => $this->getSwiftMessage()->getHeaders()->toString(),
