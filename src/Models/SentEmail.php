@@ -93,7 +93,7 @@ class SentEmail extends DataObject
 
         $sanitisedModel =  str_replace('\\', '-', SentEmail::class);
         $adminSegment = EmailTemplatesAdmin::config()->url_segment;
-        $iframeSrc = '/admin/' . $adminSegment . '/' . $sanitisedModel . '/ViewSentEmail/?id=' . $this->ID;
+        $iframeSrc = Director::baseURL() . '/admin/' . $adminSegment . '/' . $sanitisedModel . '/ViewSentEmail/?id=' . $this->ID;
         $iframe = new LiteralField('iframe', '<iframe src="' . $iframeSrc . '" style="width:800px;background:#fff;border:1px solid #ccc;min-height:500px;vertical-align:top"></iframe>');
         $f->push($iframe);
 
