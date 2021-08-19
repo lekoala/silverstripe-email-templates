@@ -200,7 +200,7 @@ Batch sending:
 By default, this module will send emails in batch of 1000. You can change this with
 
     LeKoala\EmailTemplates\Models\Emailing:
-      batch_count: 1000
+      batch_count: 100
 
 Sending as bcc:
 By default, this module send email as bcc in order to avoid displaying
