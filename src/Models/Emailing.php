@@ -3,6 +3,7 @@
 namespace LeKoala\EmailTemplates\Models;
 
 use Exception;
+use Swift_Validate;
 use SilverStripe\ORM\DB;
 use SilverStripe\Forms\Tab;
 use SilverStripe\i18n\i18n;
@@ -10,6 +11,8 @@ use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Forms\TextField;
 use SilverStripe\Security\Member;
+use SilverStripe\Control\Director;
+use SilverStripe\Forms\FormAction;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Control\Email\Email;
@@ -18,12 +21,12 @@ use SilverStripe\Forms\ReadonlyField;
 use SilverStripe\Forms\TextareaField;
 use SilverStripe\Security\Permission;
 use SilverStripe\SiteConfig\SiteConfig;
+use SilverStripe\Admin\AdminRootController;
 use LeKoala\EmailTemplates\Email\BetterEmail;
-use LeKoala\EmailTemplates\Helpers\FluentHelper;
-use LeKoala\EmailTemplates\Admin\EmailTemplatesAdmin;
 use LeKoala\EmailTemplates\Helpers\EmailUtils;
-use SilverStripe\Forms\FormAction;
-use Swift_Validate;
+use LeKoala\EmailTemplates\Helpers\FluentHelper;
+use SilverStripe\CMS\Controllers\RootURLController;
+use LeKoala\EmailTemplates\Admin\EmailTemplatesAdmin;
 
 /**
  * Send emails to a group of members
@@ -246,7 +249,8 @@ class Emailing extends DataObject
         // Preview iframe
         $sanitisedModel =  str_replace('\\', '-', Emailing::class);
         $adminSegment = EmailTemplatesAdmin::config()->url_segment;
-        $iframeSrc = '/admin/' . $adminSegment . '/' . $sanitisedModel . '/PreviewEmailing/?id=' . $this->ID;
+        $adminBaseSegment = AdminRootController::config()->url_base;
+        $iframeSrc = Director::baseURL() . $adminBaseSegment . '/' . $adminSegment . '/' . $sanitisedModel . '/PreviewEmailing/?id=' . $this->ID;
         $iframe = new LiteralField('iframe', '<iframe src="' . $iframeSrc . '" style="width:800px;background:#fff;border:1px solid #ccc;min-height:500px;vertical-align:top"></iframe>');
         $tab->push($iframe);
 

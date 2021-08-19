@@ -20,6 +20,7 @@ use SilverStripe\Forms\CheckboxField;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Security\Permission;
 use SilverStripe\SiteConfig\SiteConfig;
+use SilverStripe\Admin\AdminRootController;
 use LeKoala\EmailTemplates\Email\BetterEmail;
 use LeKoala\EmailTemplates\Helpers\FluentHelper;
 use LeKoala\EmailTemplates\Admin\EmailTemplatesAdmin;
@@ -313,13 +314,14 @@ class EmailTemplate extends DataObject
         // Preview iframe
         $sanitisedModel =  str_replace('\\', '-', EmailTemplate::class);
         $adminSegment = EmailTemplatesAdmin::config()->url_segment;
-        $iframeSrc = Director::baseURL() . 'admin/' . $adminSegment . '/' . $sanitisedModel . '/PreviewEmail/?id=' . $this->ID;
+        $adminBaseSegment = AdminRootController::config()->url_base;
+        $iframeSrc = Director::baseURL() . $adminBaseSegment . '/' . $adminSegment . '/' . $sanitisedModel . '/PreviewEmail/?id=' . $this->ID;
         $iframe = new LiteralField('iframe', '<iframe src="' . $iframeSrc . '" style="width:800px;background:#fff;border:1px solid #ccc;min-height:500px;vertical-align:top"></iframe>');
         $tab->push($iframe);
 
         $env = Environment::getEnv('SS_SEND_ALL_EMAILS_TO');
         if ($env || Director::isDev()) {
-            $sendTestLink = Director::baseURL() . 'admin/' . $adminSegment . '/' . $sanitisedModel . '/SendTestEmailTemplate/?id=' . $this->ID . '&to=' . urlencode($env);
+            $sendTestLink = Director::baseURL() . $adminBaseSegment . '/' . $adminSegment . '/' . $sanitisedModel . '/SendTestEmailTemplate/?id=' . $this->ID . '&to=' . urlencode($env);
             $sendTest = new LiteralField("send_test", "<hr/><a href='$sendTestLink'>Send test email</a>");
             $tab->push($sendTest);
         }
