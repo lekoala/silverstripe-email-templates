@@ -3,6 +3,7 @@
 namespace LeKoala\EmailTemplates\Models;
 
 use LeKoala\Base\Actions\CustomAction;
+use SilverStripe\Admin\AdminRootController;
 use LeKoala\EmailTemplates\Admin\EmailTemplatesAdmin;
 use SilverStripe\Control\Director;
 use SilverStripe\Control\Email\Email;
