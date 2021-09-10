@@ -3,6 +3,7 @@
 namespace LeKoala\EmailTemplates\Models;
 
 use LeKoala\Base\Actions\CustomAction;
+use SilverStripe\Admin\AdminRootController;
 use LeKoala\EmailTemplates\Admin\EmailTemplatesAdmin;
 use SilverStripe\Control\Director;
 use SilverStripe\Control\Email\Email;
@@ -93,7 +94,8 @@ class SentEmail extends DataObject
 
         $sanitisedModel =  str_replace('\\', '-', SentEmail::class);
         $adminSegment = EmailTemplatesAdmin::config()->url_segment;
-        $iframeSrc = Director::baseURL() . '/admin/' . $adminSegment . '/' . $sanitisedModel . '/ViewSentEmail/?id=' . $this->ID;
+        $adminBaseSegment = AdminRootController::config()->url_base;
+        $iframeSrc = Director::baseURL() . $adminBaseSegment . '/' . $adminSegment . '/' . $sanitisedModel . '/ViewSentEmail/?id=' . $this->ID;
         $iframe = new LiteralField('iframe', '<iframe src="' . $iframeSrc . '" style="width:800px;background:#fff;border:1px solid #ccc;min-height:500px;vertical-align:top"></iframe>');
         $f->push($iframe);
 
