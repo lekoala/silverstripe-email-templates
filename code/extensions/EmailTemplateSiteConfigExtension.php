@@ -117,6 +117,10 @@ class EmailTemplateSiteConfigExtension extends DataExtension
         if ($field && !$this->owner->$field) {
             return;
         }
+        if (strpos($this->owner->$field, 'twitter.com')) {
+            return $this->owner->$field;
+        }
+
         return 'https://twitter.com/' . $this->owner->$field;
     }
 
@@ -129,6 +133,10 @@ class EmailTemplateSiteConfigExtension extends DataExtension
         if ($field && !$this->owner->$field) {
             return;
         }
+        if (strpos($this->owner->$field, 'facebook.com')) {
+            return $this->owner->$field;
+        }
+
         return 'https://www.facebook.com/' . $this->owner->$field;
     }
 
