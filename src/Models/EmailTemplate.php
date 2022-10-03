@@ -167,7 +167,7 @@ class EmailTemplate extends DataObject
 
         foreach ($fields as $field) {
             // Match variables with a dot in the call, like $MyModel.SomeMethod
-            preg_match_all('/\$([a-zA-Z]+)\./m', $this->$field, $matches);
+            preg_match_all('/\$([a-zA-Z]+)\./m', $this->$field ?: '', $matches);
 
             if (!empty($matches) && !empty($matches[1])) {
                 // Get unique model names
