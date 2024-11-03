@@ -3,7 +3,6 @@
 namespace LeKoala\EmailTemplates\Email;
 
 use Exception;
-use Swift_MimePart;
 use BadMethodCallException;
 use SilverStripe\i18n\i18n;
 use SilverStripe\Control\HTTP;
@@ -11,16 +10,16 @@ use SilverStripe\View\SSViewer;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Security\Member;
 use SilverStripe\Control\Director;
-use SilverStripe\Security\Security;
 use SilverStripe\View\Requirements;
-use SilverStripe\Control\Controller;
-use SilverStripe\Core\Config\Config;
 use SilverStripe\Control\Email\Email;
 use SilverStripe\SiteConfig\SiteConfig;
 use LeKoala\EmailTemplates\Models\SentEmail;
 use LeKoala\EmailTemplates\Helpers\EmailUtils;
 use LeKoala\EmailTemplates\Models\EmailTemplate;
 use LeKoala\EmailTemplates\Helpers\SubsiteHelper;
+use SilverStripe\Security\DefaultAdminService;
+use SilverStripe\View\ViewableData;
+use Symfony\Component\Mime\Part\AbstractPart;
 
 /**
  * An improved and more pleasant base Email class to use on your project
@@ -61,9 +60,19 @@ class BetterEmail extends Email
     protected $locale;
 
     /**
+     * @var string
+     */
+    protected $to;
+
+    /**
      * @var Member
      */
     protected $to_member;
+
+    /**
+     * @var string
+     */
+    protected $from;
 
     /**
      * @var Member
@@ -170,7 +179,7 @@ class BetterEmail extends Email
      * @param string $body The email body
      * @return $this
      */
-    public function setBody($body)
+    public function setBody(AbstractPart|string $body = null): static
     {
         $plainPart = $this->findPlainPart();
         if ($plainPart) {
@@ -210,9 +219,9 @@ class BetterEmail extends Email
      *
      * @return bool true if successful or array of failed recipients
      */
-    public function send()
+    public function send(): void
     {
-        return $this->doSend(false);
+        $this->doSend(false);
     }
 
     /**
@@ -220,9 +229,9 @@ class BetterEmail extends Email
      *
      * @return bool true if successful or array of failed recipients
      */
-    public function sendPlain()
+    public function sendPlain(): void
     {
-        return $this->doSend(true);
+        $this->doSend(true);
     }
 
     /**
@@ -381,7 +390,7 @@ class BetterEmail extends Email
      * @param string $template
      * @return $this
      */
-    public function setHTMLTemplate($template)
+    public function setHTMLTemplate(string $template): static
     {
         if (substr($template, -3) == '.ss') {
             $template = substr($template, 0, -3);
@@ -591,7 +600,7 @@ class BetterEmail extends Email
      * @param string|null $name The name of the recipient (if one)
      * @return $this
      */
-    public function setTo($address, $name = null)
+    public function setTo(string|array $address, string $name = ''): static
     {
         // Allow Name <my@email.com>
         if (!$name && is_string($address)) {
@@ -609,6 +618,7 @@ class BetterEmail extends Email
                 $this->to_member = null;
             }
         }
+        $this->to = $address;
         return parent::setTo($address, $name);
     }
 
@@ -618,7 +628,7 @@ class BetterEmail extends Email
      * @param string $subject The Subject line for the email
      * @return $this
      */
-    public function setSubject($subject)
+    public function setSubject(string $subject): static
     {
         // Do not allow changing subject if a template is set
         if ($this->emailTemplate && $this->getSubject()) {
@@ -634,7 +644,7 @@ class BetterEmail extends Email
      */
     public function setToAdmin()
     {
-        $admin = Security::findAnAdministrator();
+        $admin = DefaultAdminService::singleton()->findOrCreateDefaultAdmin();
         return $this->setToMember($admin);
     }
 
@@ -656,7 +666,7 @@ class BetterEmail extends Email
      */
     public function bccToAdmin()
     {
-        $admin = Security::findAnAdministrator();
+        $admin = DefaultAdminService::singleton()->findOrCreateDefaultAdmin();
         return $this->addBCC($admin->Email);
     }
 
@@ -735,12 +745,13 @@ class BetterEmail extends Email
      * @param string|null $name
      * @return $this
      */
-    public function setFrom($address, $name = null)
+    public function setFrom(string|array $address, string $name = ''): static
     {
         if (!$name && is_string($address)) {
             $name = EmailUtils::get_displayname_from_rfc_email($address);
             $address = EmailUtils::get_email_from_rfc_email($address);
         }
+        $this->from = $address;
         return parent::setFrom($address, $name);
     }
 
