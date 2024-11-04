@@ -1,8 +1,10 @@
 {
-    "image":"mcr.microsoft.com/devcontainers/universal:2",
+    "image":"mcr.microsoft.com/vscode/devcontainers/base:ubuntu",
     "features": {
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {},
         "ghcr.io/shyim/devcontainers-features/php:0": {
             "extensionsExtra": "intl mysqli"
         }
-    }
+    },
+    "postCreateCommand": "./.devcontainer/init.sh"
 }
