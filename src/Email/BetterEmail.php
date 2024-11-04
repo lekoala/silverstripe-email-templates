@@ -296,7 +296,6 @@ class BetterEmail extends Email
         try {
             $res = true;
             if ($plain) {
-                // sendPlain will trigger our updated generatePlainPartFromBody
                 parent::sendPlain();
             } else {
                 parent::send();
@@ -352,21 +351,6 @@ class BetterEmail extends Email
     public function getSentMail()
     {
         return $this->sentMail;
-    }
-
-    /**
-     * Automatically adds a plain part to the email generated from the current Body
-     *
-     * @return $this
-     */
-    public function generatePlainPartFromBody()
-    {
-        $this->text(
-            EmailUtils::convert_html_to_text($this->getBody()->bodyToString()),
-            'utf-8'
-        );
-
-        return $this;
     }
 
     /**
