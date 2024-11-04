@@ -500,7 +500,7 @@ class EmailTemplate extends DataObject
             if (singleton($class)->hasMethod('getSampleRecord')) {
                 $o = $class::getSampleRecord();
             } else {
-                $o = $class::get()->sort('RAND()')->first();
+                $o = $class::get()->shuffle()->first();
             }
 
             if (!$o) {
