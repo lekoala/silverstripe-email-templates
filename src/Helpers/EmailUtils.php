@@ -2,6 +2,8 @@
 
 namespace LeKoala\EmailTemplates\Helpers;
 
+use Symfony\Component\Mime\Address;
+
 /**
  * Useful tools for emails
  */
@@ -49,6 +51,10 @@ class EmailUtils
         }
         $arr = [];
         foreach ($emails as $address => $title) {
+            if ($title instanceof Address) {
+                $address = $title->getAddress();
+                $title = $title->getName();
+            }
             $line = "$address";
             if ($title) {
                 $line .= " <$title>";
