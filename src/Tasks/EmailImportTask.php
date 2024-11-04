@@ -13,7 +13,6 @@ use TractorCow\Fluent\Model\Locale;
 use SilverStripe\Core\Manifest\ModuleLoader;
 use LeKoala\EmailTemplates\Helpers\FluentHelper;
 use LeKoala\EmailTemplates\Models\EmailTemplate;
-use TractorCow\Fluent\Extension\FluentExtension;
 use LeKoala\EmailTemplates\Helpers\SubsiteHelper;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\i18n\TextCollection\i18nTextCollector;
@@ -65,9 +64,8 @@ class EmailImportTask extends BuildTask
         }
 
         // Select which subsite to import emails to
-        $importToSubsite = array();
+        $subsites = [];
         if ($subsiteSupport) {
-            $subsites = array();
             if ($importToSubsite == 'all') {
                 $subsites = SubsiteHelper::listSubsites();
             } elseif (is_numeric($importToSubsite)) {
@@ -78,13 +76,13 @@ class EmailImportTask extends BuildTask
                         $subsiteTitle = $subsite->Title;
                     }
                 }
-                $subsites = array(
+                $subsites = [
                     $importToSubsite => $subsiteTitle
-                );
+                ];
             }
-            if ($subsiteSupport && SubsiteHelper::currentSubsiteID()) {
+            if (SubsiteHelper::currentSubsiteID()) {
                 DB::alteration_message("Importing to current subsite. Run from main site to import other subsites at once.", "created");
-                $subsites = array();
+                $subsites = [];
             }
             if (!empty($subsites)) {
                 DB::alteration_message("Importing to subsites : " . implode(',', array_values($subsites)), "created");
@@ -107,14 +105,14 @@ class EmailImportTask extends BuildTask
         $emailTemplateSingl = singleton(EmailTemplate::class);
 
         $locales = null;
-        if ($fluentSupport) {
+        if ($fluentSupport && class_exists('TractorCow\Fluent\Model\Locale')) {
             if (FluentHelper::isClassTranslated(EmailTemplate::class)) {
                 $locales = Locale::get()->column('Locale');
 
                 // We collect only one locale, restrict the list
                 if ($chosenLocales) {
                     $arr = explode(',', $chosenLocales);
-                    $locales = array();
+                    $locales = [];
                     foreach ($arr as $a) {
                         $a = FluentHelper::get_locale_from_lang($a);
                         $locales[] = $a;
@@ -161,9 +159,9 @@ class EmailImportTask extends BuildTask
                 continue;
             }
 
-            $whereCode = array(
+            $whereCode = [
                 'Code' => $code
-            );
+            ];
             $emailTemplate = EmailTemplate::get()->filter($whereCode)->first();
 
             // Check if it has been modified or not
@@ -210,23 +208,23 @@ class EmailImportTask extends BuildTask
             ]
             */
 
-            $translationTable = array();
+            $translationTable = [];
             foreach ($entities as $entity => $data) {
                 if ($locales) {
                     foreach ($locales as $locale) {
                         i18n::set_locale($locale);
                         if (!isset($translationTable[$entity])) {
-                            $translationTable[$entity] = array();
+                            $translationTable[$entity] = [];
                         }
                         $translationTable[$entity][$locale] = i18n::_t($entity, $data);
                     }
                     i18n::set_locale($defaultLocale);
                 } else {
-                    $translationTable[$entity] = array($defaultLocale => i18n::_t($entity, $data));
+                    $translationTable[$entity] = [$defaultLocale => i18n::_t($entity, $data)];
                 }
             }
 
-            $contentLocale = array();
+            $contentLocale = [];
             // May be null
             if ($locales) {
                 foreach ($locales as $locale) {
@@ -320,7 +318,7 @@ class EmailImportTask extends BuildTask
 
     public static function checkContentForErrors($content)
     {
-        $errors = array();
+        $errors = [];
         if (strpos($content, '<% with') !== false) {
             $errors[] = 'Replace "with" blocks by plain calls to the variable';
         }
@@ -345,12 +343,12 @@ class EmailImportTask extends BuildTask
     {
         $templates = glob(Director::baseFolder() . '/' . project() . '/templates/Email/*Email.ss');
 
-        $framework = self::config()->import_framework;
+        $framework = self::config()->get('import_framework');
         if ($framework) {
             // use ? to avoid matching plain Email.ss
             $templates = array_merge($templates, glob(Director::baseFolder() . '/vendor/silverstripe/framework/templates/SilverStripe/Control/Email/?*Email.ss'));
         }
-        $extra = self::config()->extra_paths;
+        $extra = self::config()->get('extra_paths');
         foreach ($extra as $path) {
             $path = trim($path, '/');
             $templates = array_merge($templates, glob(Director::baseFolder() . '/' . $path . '/*Email.ss'));
@@ -391,7 +389,7 @@ class EmailImportTask extends BuildTask
             $dom->loadHTML(mb_convert_encoding($source, 'HTML-ENTITIES', 'UTF-8'));
 
             // Look for nodes to assign to proper fields (will overwrite content)
-            $fields = array('Content', 'Callout', 'Subject');
+            $fields = ['Content', 'Callout', 'Subject'];
             foreach ($fields as $field) {
                 $node = $dom->getElementById($field);
                 if ($node) {

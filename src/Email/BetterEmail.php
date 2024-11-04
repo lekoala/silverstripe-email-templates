@@ -19,6 +19,7 @@ use LeKoala\EmailTemplates\Models\EmailTemplate;
 use LeKoala\EmailTemplates\Helpers\SubsiteHelper;
 use SilverStripe\Security\DefaultAdminService;
 use SilverStripe\View\ViewableData;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mime\Part\AbstractPart;
 
 /**
@@ -85,7 +86,7 @@ class BetterEmail extends Email
     protected $disabled = false;
 
     /**
-     * @var SentMail
+     * @var SentEmail
      */
     protected $sentMail = null;
 
@@ -116,7 +117,7 @@ class BetterEmail extends Email
         parent::__construct($from, $to, $subject, $body, $cc, $bcc, $returnPath);
 
         // Use template as a layout
-        if ($defaultTemplate = self::config()->template) {
+        if ($defaultTemplate = self::config()->get('template')) {
             // Call method because variable is private
             parent::setHTMLTemplate($defaultTemplate);
         }
@@ -125,12 +126,12 @@ class BetterEmail extends Email
     /**
      * Persists the email to the database
      *
-     * @param bool|array $results
+     * @param bool|array|string $results
      * @return SentEmail
      */
     protected function persist($results)
     {
-        $record = SentEmail::create(array(
+        $record = SentEmail::create([
             'To' => EmailUtils::format_email_addresses($this->getTo()),
             'From' => EmailUtils::format_email_addresses($this->getFrom()),
             'ReplyTo' => EmailUtils::format_email_addresses($this->getReplyTo()),
@@ -140,7 +141,7 @@ class BetterEmail extends Email
             'CC' => EmailUtils::format_email_addresses($this->getCC()),
             'BCC' => EmailUtils::format_email_addresses($this->getBCC()),
             'Results' => json_encode($results),
-        ));
+        ]);
         $record->write();
 
         // TODO: migrate this to a cron task
@@ -188,7 +189,7 @@ class BetterEmail extends Email
         unset($plainPart);
 
         $body = self::rewriteURLs($body);
-        $this->getSwiftMessage()->setBody($body);
+        parent::setBody($body);
 
         return $this;
     }
@@ -227,7 +228,7 @@ class BetterEmail extends Email
     /**
      * Sends a plain text email
      *
-     * @return bool true if successful or array of failed recipients
+     * @return void
      */
     public function sendPlain(): void
     {
@@ -238,7 +239,7 @@ class BetterEmail extends Email
      * Send this email
      *
      * @param bool $plain
-     * @return bool true if successful or array of failed recipients
+     * @return bool|string true if successful or error string on failure
      * @throws Exception
      */
     public function doSend($plain = false)
@@ -294,11 +295,16 @@ class BetterEmail extends Email
             $this->clearBody();
         }
 
-        if ($plain) {
-            // sendPlain will trigger our updated generatePlainPartFromBody
-            $res = parent::sendPlain();
-        } else {
-            $res = parent::send();
+        try {
+            $res = true;
+            if ($plain) {
+                // sendPlain will trigger our updated generatePlainPartFromBody
+                parent::sendPlain();
+            } else {
+                parent::send();
+            }
+        } catch (TransportExceptionInterface $th) {
+            $res = $th->getMessage();
         }
 
         if ($restore_locale) {
@@ -377,7 +383,7 @@ class BetterEmail extends Email
      */
     public function clearBody()
     {
-        $this->getSwiftMessage()->setBody(null);
+        $this->setBody(null);
         return $this;
     }
 
@@ -515,7 +521,7 @@ class BetterEmail extends Email
         // Build HTML / Plain components
         if ($htmlPart && !$plainOnly) {
             $this->setBody($htmlPart);
-            $this->getSwiftMessage()->setContentType('text/html');
+            $this->setContentType('text/html');
             $this->getSwiftMessage()->setCharset('utf-8');
             if ($plainPart) {
                 $this->getSwiftMessage()->addPart($plainPart, 'text/plain', 'utf-8');
@@ -582,7 +588,7 @@ class BetterEmail extends Email
     {
         if (!$this->to_member && $this->to) {
             $email = EmailUtils::get_email_from_rfc_email($this->to);
-            $member = Member::get()->filter(array('Email' => $email))->first();
+            $member = Member::get()->filter(['Email' => $email])->first();
             if ($member) {
                 $this->setToMember($member);
             }
@@ -598,7 +604,7 @@ class BetterEmail extends Email
      *
      * @param string|array $address The message recipient(s) - if sending to multiple, use an array of address => name
      * @param string|null $name The name of the recipient (if one)
-     * @return $this
+     * @return static
      */
     public function setTo(string|array $address, string $name = ''): static
     {
@@ -626,7 +632,7 @@ class BetterEmail extends Email
 
     /**
      * @param string $subject The Subject line for the email
-     * @return $this
+     * @return static
      */
     public function setSubject(string $subject): static
     {
@@ -699,7 +705,7 @@ class BetterEmail extends Email
         }
         $this->to_member = $member;
 
-        $this->addData(array('Recipient' => $member));
+        $this->addData(['Recipient' => $member]);
 
         return $this->setTo($member->Email, $member->getTitle());
     }
@@ -713,7 +719,7 @@ class BetterEmail extends Email
     {
         if (!$this->from_member && $this->from) {
             $email = EmailUtils::get_email_from_rfc_email($this->from);
-            $member = Member::get()->filter(array('Email' => $email))->first();
+            $member = Member::get()->filter(['Email' => $email])->first();
             if ($member) {
                 $this->setFromMember($member);
             }
@@ -733,7 +739,7 @@ class BetterEmail extends Email
     {
         $this->from_member = $member;
 
-        $this->addData(array('Sender' => $member));
+        $this->addData(['Sender' => $member]);
 
         return $this->setFrom($member->Email, $member->getTitle());
     }

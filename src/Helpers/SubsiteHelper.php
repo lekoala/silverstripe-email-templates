@@ -59,7 +59,7 @@ class SubsiteHelper
      */
     public static function usesSubsite()
     {
-        return class_exists(SubsiteState::class);
+        return class_exists(SubsiteState::class) && class_exists(Subsite::class);
     }
 
 
@@ -81,7 +81,7 @@ class SubsiteHelper
      */
     public static function enableFilter()
     {
-        if (!self::usesSubsite()) {
+        if (!self::usesSubsite() || !class_exists(Subsite::class)) {
             return;
         }
         self::$previousState = Subsite::$disable_subsite_filter;
@@ -95,7 +95,7 @@ class SubsiteHelper
      */
     public static function disableFilter()
     {
-        if (!self::usesSubsite()) {
+        if (!self::usesSubsite() || !class_exists(Subsite::class)) {
             return;
         }
         self::$previousState = Subsite::$disable_subsite_filter;
@@ -107,7 +107,7 @@ class SubsiteHelper
      */
     public static function restoreFilter()
     {
-        if (!self::usesSubsite()) {
+        if (!self::usesSubsite() || !class_exists(Subsite::class)) {
             return;
         }
         Subsite::$disable_subsite_filter = self::$previousState;
@@ -153,7 +153,7 @@ class SubsiteHelper
      */
     public static function changeSubsite($ID, $flush = null)
     {
-        if (!self::usesSubsite()) {
+        if (!self::usesSubsite() || !class_exists(Subsite::class) || !class_exists(SubsiteState::class)) {
             return;
         }
         self::$previousSubsite = self::currentSubsiteID();
@@ -172,7 +172,7 @@ class SubsiteHelper
      */
     public static function restoreSubsite()
     {
-        if (!self::usesSubsite()) {
+        if (!self::usesSubsite() || !class_exists(Subsite::class)) {
             return;
         }
         Subsite::changeSubsite(self::$previousSubsite);
@@ -183,7 +183,7 @@ class SubsiteHelper
      */
     public static function listSubsites()
     {
-        if (!self::usesSubsite()) {
+        if (!self::usesSubsite() || !class_exists(Subsite::class)) {
             return [];
         }
         return  Subsite::get()->map();
@@ -198,6 +198,9 @@ class SubsiteHelper
      */
     public static function withSubsite($ID, $cb)
     {
+        if (!class_exists(SubsiteState::class)) {
+            return [];
+        }
         $currentID = self::currentSubsiteID();
         SubsiteState::singleton()->setSubsiteId($ID);
         $cb();
@@ -208,12 +211,12 @@ class SubsiteHelper
      * Execute the callback in all subsites
      *
      * @param callable $cb
-     * @param bool $încludeMainSite
+     * @param bool $includeMainSite
      * @return void
      */
     public static function withSubsites($cb, $includeMainSite = true)
     {
-        if (!self::usesSubsite()) {
+        if (!self::usesSubsite() || !class_exists(SubsiteState::class) || !class_exists(State::class)) {
             $cb();
             return;
         }

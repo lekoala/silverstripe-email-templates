@@ -2,17 +2,16 @@
 
 namespace LeKoala\EmailTemplates\Models;
 
+use Egulias\EmailValidator\EmailValidator;
+use Egulias\EmailValidator\Validation\RFCValidation;
 use Exception;
-use Swift_Validate;
 use SilverStripe\ORM\DB;
 use SilverStripe\Forms\Tab;
-use SilverStripe\i18n\i18n;
 use SilverStripe\ORM\DataList;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Forms\TextField;
 use SilverStripe\Security\Member;
 use SilverStripe\Control\Director;
-use SilverStripe\Forms\FormAction;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Forms\LiteralField;
 use SilverStripe\Control\Email\Email;
@@ -20,13 +19,12 @@ use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\ReadonlyField;
 use SilverStripe\Forms\TextareaField;
 use SilverStripe\Security\Permission;
-use SilverStripe\SiteConfig\SiteConfig;
 use SilverStripe\Admin\AdminRootController;
 use LeKoala\EmailTemplates\Email\BetterEmail;
 use LeKoala\EmailTemplates\Helpers\EmailUtils;
 use LeKoala\EmailTemplates\Helpers\FluentHelper;
-use SilverStripe\CMS\Controllers\RootURLController;
 use LeKoala\EmailTemplates\Admin\EmailTemplatesAdmin;
+use SilverStripe\ORM\FieldType\DBHTMLText;
 
 /**
  * Send emails to a group of members
@@ -35,6 +33,9 @@ use LeKoala\EmailTemplates\Admin\EmailTemplatesAdmin;
  * @property string $Recipients
  * @property string $RecipientsList
  * @property string $Sender
+ * @property string $LastSent
+ * @property int $LastSentCount
+ * @property string $LastError
  * @property string $Content
  * @property string $Callout
  * @author lekoala
@@ -43,7 +44,7 @@ class Emailing extends DataObject
 {
     private static $table_name = 'Emailing';
 
-    private static $db = array(
+    private static $db = [
         'Subject' => 'Varchar(255)',
         'Recipients' => 'Varchar(255)',
         'RecipientsList' => 'Text',
@@ -54,16 +55,16 @@ class Emailing extends DataObject
         // Content
         'Content' => 'HTMLText',
         'Callout' => 'HTMLText',
-    );
-    private static $summary_fields = array(
+    ];
+    private static $summary_fields = [
         'Subject', 'LastSent'
-    );
-    private static $searchable_fields = array(
+    ];
+    private static $searchable_fields = [
         'Subject',
-    );
-    private static $translate = array(
+    ];
+    private static $translate = [
         'Subject', 'Content', 'Callout'
-    );
+    ];
 
     public function getTitle()
     {
@@ -78,7 +79,7 @@ class Emailing extends DataObject
         $onclick = 'return confirm(\'' . $sure . '\');';
 
         $sanitisedModel =  str_replace('\\', '-', Emailing::class);
-        $adminSegment = EmailTemplatesAdmin::config()->url_segment;
+        $adminSegment = EmailTemplatesAdmin::config()->get('url_segment');
         $link = '/admin/' . $adminSegment . '/' . $sanitisedModel . '/SendEmailing/?id=' . $this->ID;
         $btnContent = '<a href="' . $link . '" id="action_doSend" onclick="' . $onclick . '" class="btn action btn-info font-icon-angle-double-right">';
         $btnContent .= '<span class="btn__title">' . $label . '</span></a>';
@@ -98,7 +99,9 @@ class Emailing extends DataObject
         $fields->replaceField('Recipients', $Recipients = new DropdownField('Recipients', null, $recipientsList));
         $Recipients->setDescription(_t('Emailing.EMAIL_COUNT', "Email will be sent to {count} members", ['count' => $this->getAllRecipients()->count()]));
 
-        $fields->dataFieldByName('Callout')->setRows(5);
+        /** @var DBHTMLText */
+        $fCallout = $fields->dataFieldByName('Callout');
+        $fCallout->setRows(5);
 
         if ($this->ID) {
             $fields->addFieldToTab('Root.Preview', $this->previewTab());
@@ -130,7 +133,7 @@ class Emailing extends DataObject
     }
 
     /**
-     * @return DataList
+     * @return Member[]|DataList
      */
     public function getAllRecipients()
     {
@@ -171,8 +174,11 @@ class Emailing extends DataObject
     public function listRecipientsWithInvalidEmails()
     {
         $list = [];
+        $validator = new EmailValidator();
+        $validation =  new RFCValidation();
         foreach ($this->getAllRecipients() as $r) {
-            $res = Swift_Validate::email($r->Email);
+            /** @var Member $r */
+            $res = $validator->isValid($r->Email, $validation); //true
             if (!$res || !$r->Email) {
                 $list[] = $r;
             }
@@ -248,15 +254,15 @@ class Emailing extends DataObject
 
         // Preview iframe
         $sanitisedModel =  str_replace('\\', '-', Emailing::class);
-        $adminSegment = EmailTemplatesAdmin::config()->url_segment;
-        $adminBaseSegment = AdminRootController::config()->url_base;
+        $adminSegment = EmailTemplatesAdmin::config()->get('url_segment');
+        $adminBaseSegment = AdminRootController::config()->get('url_base');
         $iframeSrc = Director::baseURL() . $adminBaseSegment . '/' . $adminSegment . '/' . $sanitisedModel . '/PreviewEmailing/?id=' . $this->ID;
         $iframe = new LiteralField('iframe', '<iframe src="' . $iframeSrc . '" style="width:800px;background:#fff;border:1px solid #ccc;min-height:500px;vertical-align:top"></iframe>');
         $tab->push($iframe);
 
         // Merge var helper
         $vars = $this->collectMergeVars();
-        $syntax = self::config()->mail_merge_syntax;
+        $syntax = self::config()->get('mail_merge_syntax');
         if (empty($vars)) {
             $varsHelperContent = "You can use $syntax notation to use mail merge variable for the recipients";
         } else {
@@ -312,7 +318,7 @@ class Emailing extends DataObject
     {
         $fields = ['Subject', 'Content', 'Callout'];
 
-        $syntax = self::config()->mail_merge_syntax;
+        $syntax = self::config()->get('mail_merge_syntax');
 
         $regex = $syntax;
         $regex = preg_quote($regex);
@@ -349,6 +355,7 @@ class Emailing extends DataObject
             $email->setFrom($senderEmail, $senderName);
         }
         foreach ($this->getAllRecipients() as $r) {
+            /** @var Member $r */
             $email->addBCC($r->Email, $r->FirstName . ' ' . $r->Surname);
         }
         $email->setSubject($this->Subject);
@@ -376,7 +383,7 @@ class Emailing extends DataObject
      */
     public function getMergeVarsHeader()
     {
-        return self::config()->mail_merge_header;
+        return self::config()->get('mail_merge_header');
     }
 
     /**
@@ -388,10 +395,11 @@ class Emailing extends DataObject
     public function getEmailsByLocales()
     {
         $batchCount = self::config()->batch_count ?? 100;
-        $sendBcc = self::config()->send_bcc;
+        $sendBcc = self::config()->get('send_bcc');
 
         $membersByLocale = [];
         foreach ($this->getAllRecipients() as $r) {
+            /** @var Member $r */
             if (!isset($membersByLocale[$r->Locale])) {
                 $membersByLocale[$r->Locale] = [];
             }

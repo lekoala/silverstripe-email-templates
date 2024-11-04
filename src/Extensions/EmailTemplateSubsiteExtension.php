@@ -2,11 +2,12 @@
 
 namespace LeKoala\EmailTemplates\Extensions;
 
+use LeKoala\EmailTemplates\Helpers\SubsiteHelper;
 use SilverStripe\ORM\DataQuery;
 use SilverStripe\ORM\DataExtension;
 use SilverStripe\Security\Permission;
-use LeKoala\Base\Subsite\SubsiteHelper;
 use SilverStripe\ORM\Queries\SQLSelect;
+use SilverStripe\Security\Member;
 
 /**
  * Add subsites support
@@ -16,9 +17,9 @@ use SilverStripe\ORM\Queries\SQLSelect;
 class EmailSubsiteExtension extends DataExtension
 {
 
-    private static $has_one = array(
+    private static $has_one = [
         'Subsite' => 'Subsite',
-    );
+    ];
 
     public function isMainDataObject()
     {
@@ -85,7 +86,7 @@ class EmailSubsiteExtension extends DataExtension
     }
 
     /**
-     * @param Member
+     * @param Member $member
      * @return boolean|null
      */
     public function canEdit($member = null)
@@ -94,7 +95,7 @@ class EmailSubsiteExtension extends DataExtension
     }
 
     /**
-     * @param Member
+     * @param Member $member
      * @return boolean|null
      */
     public function canCreate($member = null)
@@ -103,7 +104,7 @@ class EmailSubsiteExtension extends DataExtension
     }
 
     /**
-     * @param Member
+     * @param Member $member
      * @return boolean|null
      */
     public function canDelete($member = null)

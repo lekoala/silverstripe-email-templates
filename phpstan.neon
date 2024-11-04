@@ -1,0 +1,21 @@
+parameters:
+    treatPhpDocTypesAsCertain: false
+    checkGenericClassInNonGenericObjectType: false
+    ignoreErrors:
+        - '#Static property [a-zA-Z0-9\\_]+::\$segment is never read, only written\.#'
+        - '#Static property [a-zA-Z0-9\\_]+::\$table_name is never read, only written\.#'
+        - '#Static property [a-zA-Z0-9\\_]+::\$db is never read, only written\.#'
+        - '#Static property [a-zA-Z0-9\\_]+::\$summary_fields is never read, only written\.#'
+        - '#Static property [a-zA-Z0-9\\_]+::\$default_sort is never read, only written\.#'
+        - '#Static property [a-zA-Z0-9\\_]+::\$url_segment is never read, only written\.#'
+        - '#Static property [a-zA-Z0-9\\_]+::\$managed_models is never read, only written\.#'
+        - '#Static property [a-zA-Z0-9\\_]+::\$menu_title is never read, only written\.#'
+        - '#Static property [a-zA-Z0-9\\_]+::\$menu_icon is never read, only written\.#'
+        - '#Static property [a-zA-Z0-9\\_]+::\$allowed_actions is never read, only written\.#'
+    parallel:
+        maximumNumberOfProcesses: 4
+    level: 5
+    paths:
+        - src
+    scanDirectories:
+        - vendor

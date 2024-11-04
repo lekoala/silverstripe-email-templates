@@ -43,13 +43,14 @@ use LeKoala\EmailTemplates\Admin\EmailTemplatesAdmin;
  * @property string $Content
  * @property string $Callout
  * @property boolean $Disabled
+ * @property int $SubsiteID
  * @author lekoala
  */
 class EmailTemplate extends DataObject
 {
     private static $table_name = 'EmailTemplate';
 
-    private static $db = array(
+    private static $db = [
         'Subject' => 'Varchar(255)',
         'DefaultSender' => 'Varchar(255)',
         'DefaultRecipient' => 'Varchar(255)',
@@ -60,25 +61,25 @@ class EmailTemplate extends DataObject
         'Callout' => 'HTMLText',
         // Configuration
         'Disabled' => 'Boolean',
-    );
-    private static $summary_fields = array(
+    ];
+    private static $summary_fields = [
         'Subject',
         'Code',
         'Category',
         'Disabled',
-    );
-    private static $searchable_fields = array(
+    ];
+    private static $searchable_fields = [
         'Subject',
         'Code',
         'Category',
         'Disabled',
-    );
-    private static $indexes = array(
+    ];
+    private static $indexes = [
         'Code' => true, // Code is not unique because it can be used by subsites
-    );
-    private static $translate = array(
+    ];
+    private static $translate = [
         'Subject', 'Content', 'Callout'
-    );
+    ];
 
     public function getTitle()
     {
@@ -112,10 +113,10 @@ class EmailTemplate extends DataObject
 
         // Cleanup UI
         $categories = EmailTemplate::get()->column('Category');
-        $fields->addFieldsToTab('Root.Settings', new DropdownField('Category', 'Category', array_combine($categories, $categories)));
-        $fields->addFieldsToTab('Root.Settings', new CheckboxField('Disabled'));
-        $fields->addFieldsToTab('Root.Settings', new TextField('DefaultSender'));
-        $fields->addFieldsToTab('Root.Settings', new TextField('DefaultRecipient'));
+        $fields->addFieldToTab('Root.Settings', new DropdownField('Category', 'Category', array_combine($categories, $categories)));
+        $fields->addFieldToTab('Root.Settings', new CheckboxField('Disabled'));
+        $fields->addFieldToTab('Root.Settings', new TextField('DefaultSender'));
+        $fields->addFieldToTab('Root.Settings', new TextField('DefaultRecipient'));
 
 
         return $fields;
@@ -153,7 +154,7 @@ class EmailTemplate extends DataObject
     {
         $fields = ['Content', 'Callout'];
 
-        $models = self::config()->default_models;
+        $models = self::config()->get('default_models');
 
         // Build a list of non namespaced models
         // They are not likely to clash anyway because of their unique table name
@@ -243,9 +244,9 @@ class EmailTemplate extends DataObject
     protected function mergeFieldsHelper()
     {
         $content = '<strong>Base fields:</strong><br/>';
-        $baseFields = array(
+        $baseFields = [
             'To', 'Cc', 'Bcc', 'From', 'Subject', 'Body', 'BaseURL', 'Controller'
-        );
+        ];
         foreach ($baseFields as $baseField) {
             $content .= $baseField . ', ';
         }
@@ -253,18 +254,18 @@ class EmailTemplate extends DataObject
 
         $models = $this->getAvailableModels();
 
-        $modelsByClass = array();
-        $classes = array();
+        $modelsByClass = [];
+        $classes = [];
         foreach ($models as $name => $model) {
             $classes[] = $model;
             if (!isset($modelsByClass[$model])) {
-                $modelsByClass[$model] = array();
+                $modelsByClass[$model] = [];
             }
             $modelsByClass[$model][] = $name;
         }
         $classes = array_unique($classes);
 
-        $locales = array();
+        $locales = [];
         // if (class_exists('Fluent')) {
         //     $locales = Fluent::locales();
         // }
@@ -287,7 +288,7 @@ class EmailTemplate extends DataObject
             }
 
             // We could also show methods but that may be long
-            if (self::config()->helper_show_methods) {
+            if (self::config()->get('helper_show_methods')) {
                 $methods = array_diff($o->allMethodNames(true), $o->allMethodNames());
                 foreach ($methods as $method) {
                     if (strpos($method, 'get') === 0) {
@@ -313,8 +314,8 @@ class EmailTemplate extends DataObject
 
         // Preview iframe
         $sanitisedModel =  str_replace('\\', '-', EmailTemplate::class);
-        $adminSegment = EmailTemplatesAdmin::config()->url_segment;
-        $adminBaseSegment = AdminRootController::config()->url_base;
+        $adminSegment = EmailTemplatesAdmin::config()->get('url_segment');
+        $adminBaseSegment = AdminRootController::config()->get('url_base');
         $iframeSrc = Director::baseURL() . $adminBaseSegment . '/' . $adminSegment . '/' . $sanitisedModel . '/PreviewEmail/?id=' . $this->ID;
         $iframe = new LiteralField('iframe', '<iframe src="' . $iframeSrc . '" style="width:800px;background:#fff;border:1px solid #ccc;min-height:500px;vertical-align:top"></iframe>');
         $tab->push($iframe);
@@ -434,7 +435,7 @@ class EmailTemplate extends DataObject
      */
     public function setPreviewData(BetterEmail $email)
     {
-        $data = array();
+        $data = [];
 
         // Get an array of data like ["Body" => "My content", "Callout" => "The callout..."]
         $emailData = $email->getData();
@@ -461,7 +462,7 @@ class EmailTemplate extends DataObject
                         if (isset($data[$objectName])) {
                             $object = $data[$objectName];
                         } else {
-                            $object = new ArrayData(array());
+                            $object = new ArrayData([]);
                         }
                         $curr = $object;
 

@@ -22,15 +22,15 @@ use SilverStripe\Security\Member;
 class EmailTemplatesAdmin extends ModelAdmin
 {
 
-    private static $managed_models = array(
+    private static $managed_models = [
         EmailTemplate::class,
         SentEmail::class,
         Emailing::class,
-    );
+    ];
     private static $url_segment = 'email-templates';
     private static $menu_title = 'Emails';
     private static $menu_icon = 'lekoala/silverstripe-email-templates:images/mail.png';
-    private static $allowed_actions = array(
+    private static $allowed_actions = [
         'ImportForm',
         'SearchForm',
         'PreviewEmail',
@@ -38,7 +38,7 @@ class EmailTemplatesAdmin extends ModelAdmin
         'SendEmailing',
         'ViewSentEmail',
         'SendTestEmailTemplate',
-    );
+    ];
 
     public function subsiteCMSShowInMenu()
     {
@@ -145,7 +145,7 @@ class EmailTemplatesAdmin extends ModelAdmin
         $id = (int) $this->getRequest()->getVar('id');
 
         $Emailing = self::getEmailingById($id);
-        $html = $Emailing->renderTemplate(true);
+        $html = $Emailing->renderTemplate();
 
         Requirements::restore();
 
@@ -174,7 +174,7 @@ class EmailTemplatesAdmin extends ModelAdmin
         } else {
             $email->setTo($to);
         }
-        $result = $email->send();
+        $result = $email->doSend();
 
         print_r($result);
         die();
@@ -220,7 +220,7 @@ class EmailTemplatesAdmin extends ModelAdmin
 
     /**
      * @param int $id
-     * @return EmailTemplate
+     * @return SentEmail
      */
     protected static function getSentEmailById($id)
     {
