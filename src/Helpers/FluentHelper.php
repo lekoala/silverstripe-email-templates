@@ -47,6 +47,9 @@ class FluentHelper
      */
     public static function isClassTranslated($class)
     {
+        if (!class_exists(FluentExtension::class)) {
+            return false;
+        }
         $singl = singleton($class);
         return $singl->hasExtension(FluentExtension::class);
     }

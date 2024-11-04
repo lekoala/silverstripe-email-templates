@@ -13,6 +13,8 @@ parameters:
         - '#Static property [a-zA-Z0-9\\_]+::\$allowed_actions is never read, only written\.#'
         - '#Static property [a-zA-Z0-9\\_]+::\$has_one is never read, only written\.#'
         - '#Parameter \#2 \$customFields of method SilverStripe\\View\\ViewableData::renderWith\(\) expects array\|null, SilverStripe\\View\\ViewableData given\.#'
+        - '#TractorCow\\Fluent\\Model\\Locale#'
+        - '#SilverStripe\\Subsites\\Model\\Subsite#'
     parallel:
         maximumNumberOfProcesses: 4
     level: 5

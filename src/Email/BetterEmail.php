@@ -362,7 +362,7 @@ class BetterEmail extends Email
     public function generatePlainPartFromBody()
     {
         $this->text(
-            EmailUtils::convert_html_to_text($this->getBody()),
+            EmailUtils::convert_html_to_text($this->getBody()->bodyToString()),
             'utf-8'
         );
 
@@ -430,15 +430,8 @@ class BetterEmail extends Email
     {
         $viewer = SSViewer::fromString($content);
         $data = $this->getData();
-        // SSViewer_DataPresenter requires array
-        if (is_object($data)) {
-            if (method_exists($data, 'toArray')) {
-                $data = $data->toArray();
-            } else {
-                $data = (array) $data;
-            }
-        }
-        $result = (string) $viewer->process($this, $data);
+        
+        $result = (string) $viewer->process($data);
         $result = self::rewriteURLs($result);
         return $result;
     }
@@ -736,7 +729,7 @@ class BetterEmail extends Email
      * Improved set from that supports Name <my@domain.com> notation
      *
      * @param string|array $address
-     * @param string|null $name
+     * @param string $name
      * @return static
      */
     public function setFrom(string|array $address, string $name = ''): static
@@ -768,23 +761,11 @@ class BetterEmail extends Email
                 return $url;
             }
 
-            $absUrl = Director::absoluteURL($url, $relativeToSiteBase);
+            $absUrl = Director::absoluteURL($url, $relativeToSiteBase ? Director::BASE : Director::ROOT);
         }
 
         // If we use subsite, absolute url may not use the proper url
-        if (SubsiteHelper::usesSubsite()) {
-            $subsite = SubsiteHelper::currentSubsite();
-            if ($subsite->hasMethod('getPrimarySubsiteDomain')) {
-                $domain = $subsite->getPrimarySubsiteDomain();
-                $link = $subsite->domain();
-                $protocol = $domain->getFullProtocol();
-            } else {
-                $protocol = Director::protocol();
-                $link = $subsite->domain();
-            }
-            $absUrl = preg_replace('/\/\/[^\/]+\//', '//' . $link . '/', $absUrl);
-            $absUrl = preg_replace('/http(s)?:\/\//', $protocol, $absUrl);
-        }
+        $absUrl = SubsiteHelper::safeAbsoluteURL($absUrl);
 
         return $absUrl;
     }

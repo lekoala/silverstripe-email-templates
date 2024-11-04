@@ -4,6 +4,7 @@ namespace LeKoala\EmailTemplates\Helpers;
 
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Control\Controller;
+use SilverStripe\Control\Director;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Subsites\Model\Subsite;
 use SilverStripe\Subsites\State\SubsiteState;
@@ -61,6 +62,27 @@ class SubsiteHelper
     public static function usesSubsite()
     {
         return class_exists(SubsiteState::class) && class_exists(Subsite::class);
+    }
+
+    public static function safeAbsoluteURL($absUrl)
+    {
+        if (!self::usesSubsite() || !class_exists(Subsite::class)) {
+            return $absUrl;
+        }
+
+        $subsite = SubsiteHelper::currentSubsite();
+        if ($subsite->hasMethod('getPrimarySubsiteDomain')) {
+            $domain = $subsite->getPrimarySubsiteDomain();
+            $link = $subsite->domain();
+            $protocol = $domain->getFullProtocol();
+        } else {
+            $protocol = Director::protocol();
+            $link = $subsite->domain();
+        }
+        $absUrl = preg_replace('/\/\/[^\/]+\//', '//' . $link . '/', $absUrl);
+        $absUrl = preg_replace('/http(s)?:\/\//', $protocol, $absUrl);
+
+        return $absUrl;
     }
 
 
@@ -200,7 +222,7 @@ class SubsiteHelper
     public static function withSubsite($ID, $cb)
     {
         if (!class_exists(SubsiteState::class)) {
-            return [];
+            return;
         }
         $currentID = self::currentSubsiteID();
         SubsiteState::singleton()->setSubsiteId($ID);
