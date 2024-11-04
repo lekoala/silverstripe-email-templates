@@ -450,8 +450,8 @@ class BetterEmail extends Email
 
         // Only respect if we don't have an email template
         if ($this->emailTemplate) {
-            $htmlPart = $plainOnly ? null : $this->getBody();
-            $plainPart = $plainOnly ? $this->getBody() : null;
+            $htmlPart = $plainOnly ? null : $this->getHtmlBody();
+            $plainPart = $plainOnly ? $this->getTextBody() : null;
         }
 
         // Ensure we can at least render something
