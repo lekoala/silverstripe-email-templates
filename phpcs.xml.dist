@@ -19,7 +19,6 @@
         <exclude name="Squiz.Classes.ValidClassName.NotCamelCaps" />
         <exclude name="Generic.Files.LineLength.TooLong" />
         <exclude name="PEAR.Functions.ValidDefaultValue.NotAtEnd" />
-        <exclude name="PEAR.Functions.ValidDefaultValue.NotAtEnd" />
     </rule>
     <rule ref="Generic.Arrays.DisallowLongArraySyntax" />
 </ruleset>
