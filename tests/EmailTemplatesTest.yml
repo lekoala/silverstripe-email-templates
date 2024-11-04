@@ -4,9 +4,11 @@ Member:
 EmailTemplate:
   default:
     Code: 'Default'
+    DefaultSender: 'default@test.com'
     Subject: 'Default Subject'
     Content: 'Default Content'
   change_password:
     Code: 'ChangePassword'
+    DefaultSender: 'default@test.com'
     Subject: 'Hey, your password has been changed'
     Content: 'Your password has been changed for $AbsoluteBaseURL'

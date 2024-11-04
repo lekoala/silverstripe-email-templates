@@ -96,22 +96,22 @@ class BetterEmail extends Email
 
     /**
      * Email constructor.
-     * @param string|array|null $from
-     * @param string|array|null $to
-     * @param string|null $subject
-     * @param string|null $body
-     * @param string|array|null $cc
-     * @param string|array|null $bcc
-     * @param string|null $returnPath
+     * @param string|array $from
+     * @param string|array $to
+     * @param string $subject
+     * @param string $body
+     * @param string|array $cc
+     * @param string|array $bcc
+     * @param string $returnPath
      */
     public function __construct(
-        $from = null,
-        $to = null,
-        $subject = null,
-        $body = null,
-        $cc = null,
-        $bcc = null,
-        $returnPath = null
+        string|array $from = '',
+        string|array $to = '',
+        string $subject = '',
+        string $body = '',
+        string|array $cc = '',
+        string|array $bcc = '',
+        string $returnPath = ''
     ) {
         parent::__construct($from, $to, $subject, $body, $cc, $bcc, $returnPath);
 

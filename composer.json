@@ -43,8 +43,8 @@
     "prefer-stable": true,
     "config": {
         "allow-plugins": {
-            "composer/installers": false,
-            "silverstripe/vendor-plugin": false
+            "composer/installers": true,
+            "silverstripe/vendor-plugin": true
         }
     }
 }

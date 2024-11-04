@@ -197,7 +197,7 @@ class EmailTemplate extends DataObject
      * @param string $locale
      * @return EmailTemplate
      */
-    public static function getByCode($code, $alwaysReturn = true, $locale = null)
+    public static function getByCode($code, $alwaysReturn = true, $locale = null): ?static
     {
         if ($locale) {
             $template = FluentHelper::withLocale($locale, function () use ($code) {

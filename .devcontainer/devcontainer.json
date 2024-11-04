@@ -3,8 +3,15 @@
     "features": {
         "ghcr.io/devcontainers/features/docker-in-docker:2": {},
         "ghcr.io/shyim/devcontainers-features/php:0": {
-            "extensionsExtra": "intl mysqli"
+            "extensionsExtra": "intl mysqli mbstring"
         }
     },
-    "postCreateCommand": "./.devcontainer/init.sh"
+    "postCreateCommand": "./.devcontainer/init.sh",
+    "containerEnv": {
+        "SS_DATABASE_CLASS": "MySQLDatabase",
+        "SS_DATABASE_SERVER": "127.0.0.1",
+        "SS_DATABASE_USERNAME": "root",
+        "SS_DATABASE_PASSWORD": "secret",
+        "SS_DATABASE_CHOOSE_NAME": "true"
+    }
 }
