@@ -33,22 +33,23 @@ class SubsiteHelper
      */
     public static function currentSubsiteID()
     {
-        if (self::usesSubsite()) {
+        if (self::usesSubsite() && class_exists(SubsiteState::class)) {
             return SubsiteState::singleton()->getSubsiteId();
         }
         return 0;
     }
 
     /**
-     * @return Subsite
+     * @return Subsite|null
      */
     public static function currentSubsite()
     {
         $id = self::currentSubsiteID();
-        if (self::usesSubsite()) {
+        if (self::usesSubsite() && class_exists(Subsite::class)) {
+            /** @var Subsite|null */
             return DataObject::get_by_id(Subsite::class, $id);
         }
-        return false;
+        return null;
     }
 
     /**
@@ -68,7 +69,7 @@ class SubsiteHelper
      */
     public static function subsiteFilterDisabled()
     {
-        if (!self::usesSubsite()) {
+        if (!self::usesSubsite() && class_exists(Subsite::class)) {
             return true;
         }
         return Subsite::$disable_subsite_filter;

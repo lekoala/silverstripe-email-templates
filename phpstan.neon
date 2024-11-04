@@ -1,6 +1,5 @@
 parameters:
     treatPhpDocTypesAsCertain: false
-    checkGenericClassInNonGenericObjectType: false
     ignoreErrors:
         - '#Static property [a-zA-Z0-9\\_]+::\$segment is never read, only written\.#'
         - '#Static property [a-zA-Z0-9\\_]+::\$table_name is never read, only written\.#'
@@ -12,6 +11,8 @@ parameters:
         - '#Static property [a-zA-Z0-9\\_]+::\$menu_title is never read, only written\.#'
         - '#Static property [a-zA-Z0-9\\_]+::\$menu_icon is never read, only written\.#'
         - '#Static property [a-zA-Z0-9\\_]+::\$allowed_actions is never read, only written\.#'
+        - '#Static property [a-zA-Z0-9\\_]+::\$has_one is never read, only written\.#'
+        - '#Parameter \#2 \$customFields of method SilverStripe\\View\\ViewableData::renderWith\(\) expects array\|null, SilverStripe\\View\\ViewableData given\.#'
     parallel:
         maximumNumberOfProcesses: 4
     level: 5

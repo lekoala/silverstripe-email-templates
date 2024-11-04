@@ -15,6 +15,12 @@ use SilverStripe\Forms\HTMLEditor\HTMLEditorField;
 /**
  * EmailTemplateSiteConfigExtension
  *
+ * @property string $EmailFooter
+ * @property string $DefaultFromEmail
+ * @property string $ContactEmail
+ * 
+ * @property-read SiteConfig|EmailTemplateSiteConfigExtension $owner
+ * 
  * @author Kalyptus SPRL <thomas@kalyptus.be>
  */
 class EmailTemplateSiteConfigExtension extends DataExtension
@@ -106,7 +112,9 @@ class EmailTemplateSiteConfigExtension extends DataExtension
     public function EmailLogoTemplate()
     {
         // Use EmailLogo if defined
+        // @phpstan-ignore-next-line
         if ($this->owner->EmailLogoID) {
+            // @phpstan-ignore-next-line
             return $this->owner->EmailLogo();
         }
         // Otherwise, use configurable field

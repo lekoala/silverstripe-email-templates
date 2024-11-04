@@ -24,6 +24,8 @@ use SilverStripe\Admin\AdminRootController;
 use LeKoala\EmailTemplates\Email\BetterEmail;
 use LeKoala\EmailTemplates\Helpers\FluentHelper;
 use LeKoala\EmailTemplates\Admin\EmailTemplatesAdmin;
+use LeKoala\EmailTemplates\Extensions\EmailTemplateSiteConfigExtension;
+use SilverStripe\Forms\HTMLEditor\HTMLEditorField;
 
 /**
  * User defined email templates
@@ -93,7 +95,9 @@ class EmailTemplate extends DataObject
         // Do not allow changing subsite
         $fields->removeByName('SubsiteID');
 
-        $fields->dataFieldByName('Callout')->setRows(5);
+        /** @var HTMLEditorField */
+        $fCallout = $fields->dataFieldByName('Callout');
+        $fCallout->setRows(5);
 
         $codeField = $fields->dataFieldByName('Code');
         $codeField->setAttribute('placeholder', _t('EmailTemplate.CODEPLACEHOLDER', 'A unique code that will be used in code to retrieve the template, e.g.: MyEmail'));
@@ -170,7 +174,7 @@ class EmailTemplate extends DataObject
             // Match variables with a dot in the call, like $MyModel.SomeMethod
             preg_match_all('/\$([a-zA-Z]+)\./m', $this->$field ?? '', $matches);
 
-            if (!empty($matches) && !empty($matches[1])) {
+            if (!empty($matches[1])) {
                 // Get unique model names
                 $arr = array_unique($matches[1]);
 
@@ -196,7 +200,7 @@ class EmailTemplate extends DataObject
      * @param string $code
      * @param bool $alwaysReturn
      * @param string $locale
-     * @return EmailTemplate
+     * @return static|null
      */
     public static function getByCode($code, $alwaysReturn = true, $locale = null): ?static
     {
@@ -216,6 +220,7 @@ class EmailTemplate extends DataObject
             $template->Disabled = true;
             $template->write();
         }
+        /** @var static|null */
         return $template;
     }
 
@@ -274,16 +279,17 @@ class EmailTemplate extends DataObject
             if (!class_exists($model)) {
                 continue;
             }
+            /** @var string[] */
             $props = Config::inst()->get($model, 'db');
             $o = singleton($model);
             $content .= '<strong>' . $model . ' (' . implode(',', $modelsByClass[$model]) . '):</strong><br/>';
             foreach ($props as $fieldName => $fieldType) {
-                // Filter out locale fields
-                foreach ($locales as $locale) {
-                    if (strpos($fieldName, $locale) !== false) {
-                        continue;
-                    }
-                }
+                // // Filter out locale fields
+                // foreach ($locales as $locale) {
+                //     if (strpos($fieldName, $locale) !== false) {
+                //         continue;
+                //     }
+                // }
                 $content .= $fieldName . ', ';
             }
 
@@ -396,6 +402,7 @@ class EmailTemplate extends DataObject
         if ($this->DefaultSender) {
             $email->setFrom($this->DefaultSender);
         } else {
+            /** @var SiteConfig|EmailTemplateSiteConfigExtension */
             $SiteConfig = SiteConfig::current_site_config();
             $email->setFrom($SiteConfig->EmailDefaultSender());
         }
@@ -451,7 +458,7 @@ class EmailTemplate extends DataObject
 
             // This match all $Variable or $Member.Firstname kind of vars
             preg_match_all('/\$([a-zA-Z.]*)/', $v, $matches);
-            if ($matches && !empty($matches[1])) {
+            if (!empty($matches[1])) {
                 foreach ($matches[1] as $name) {
                     $name = trim($name, '.');
 

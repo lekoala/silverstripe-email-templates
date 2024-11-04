@@ -4,6 +4,7 @@ namespace LeKoala\EmailTemplates\Email;
 
 use Exception;
 use BadMethodCallException;
+use LeKoala\EmailTemplates\Extensions\EmailTemplateSiteConfigExtension;
 use SilverStripe\i18n\i18n;
 use SilverStripe\Control\HTTP;
 use SilverStripe\View\SSViewer;
@@ -51,7 +52,7 @@ class BetterEmail extends Email
     const STATE_FAILED = 'failed';
 
     /**
-     * @var EmailTemplate
+     * @var EmailTemplate|null
      */
     protected $emailTemplate;
 
@@ -66,7 +67,7 @@ class BetterEmail extends Email
     protected $to;
 
     /**
-     * @var Member
+     * @var Member|null
      */
     protected $to_member;
 
@@ -76,7 +77,7 @@ class BetterEmail extends Email
     protected $from;
 
     /**
-     * @var Member
+     * @var Member|null
      */
     protected $from_member;
 
@@ -86,7 +87,7 @@ class BetterEmail extends Email
     protected $disabled = false;
 
     /**
-     * @var SentEmail
+     * @var SentEmail|null
      */
     protected $sentMail = null;
 
@@ -137,7 +138,7 @@ class BetterEmail extends Email
             'ReplyTo' => EmailUtils::format_email_addresses($this->getReplyTo()),
             'Subject' => $this->getSubject(),
             'Body' => $this->getRenderedBody(),
-            'Headers' => $this->getSwiftMessage()->getHeaders()->toString(),
+            'Headers' => $this->getHeaders()->toString(),
             'CC' => EmailUtils::format_email_addresses($this->getCC()),
             'BCC' => EmailUtils::format_email_addresses($this->getBCC()),
             'Results' => json_encode($results),
@@ -160,7 +161,7 @@ class BetterEmail extends Email
     public function getRenderedBody()
     {
         $this->render();
-        return $this->getSwiftMessage()->getBody();
+        return $this->getHtmlBody();
     }
 
     /**
@@ -169,7 +170,7 @@ class BetterEmail extends Email
      * URLs are rewritten by render process
      *
      * @param string $body
-     * @return $this
+     * @return static
      */
     public function addBody($body)
     {
@@ -178,15 +179,11 @@ class BetterEmail extends Email
 
     /**
      * @param string $body The email body
-     * @return $this
+     * @return static
      */
     public function setBody(AbstractPart|string $body = null): static
     {
-        $plainPart = $this->findPlainPart();
-        if ($plainPart) {
-            $this->getSwiftMessage()->detach($plainPart);
-        }
-        unset($plainPart);
+        $this->text(null);
 
         $body = self::rewriteURLs($body);
         parent::setBody($body);
@@ -218,7 +215,7 @@ class BetterEmail extends Email
     /**
      * Sends a HTML email
      *
-     * @return bool true if successful or array of failed recipients
+     * @return void
      */
     public function send(): void
     {
@@ -261,7 +258,7 @@ class BetterEmail extends Email
             return false;
         }
 
-        $SiteConfig = SiteConfig::current_site_config();
+        $SiteConfig = $this->currentSiteConfig();
 
         // Check for Sender and use default if necessary
         $from = $this->getFrom();
@@ -285,6 +282,7 @@ class BetterEmail extends Email
         $member = $this->to_member;
         if ($member) {
             // Maybe this member doesn't want to receive emails?
+            // @phpstan-ignore-next-line
             if ($member->hasMethod('canReceiveEmails') && !$member->canReceiveEmails()) {
                 return false;
             }
@@ -349,7 +347,7 @@ class BetterEmail extends Email
     /**
      * The last result from "send" method. Null if not sent yet or sending was cancelled
      *
-     * @return SentMail
+     * @return SentEmail
      */
     public function getSentMail()
     {
@@ -363,15 +361,8 @@ class BetterEmail extends Email
      */
     public function generatePlainPartFromBody()
     {
-        $plainPart = $this->findPlainPart();
-        if ($plainPart) {
-            $this->getSwiftMessage()->detach($plainPart);
-        }
-        unset($plainPart);
-
-        $this->getSwiftMessage()->addPart(
+        $this->text(
             EmailUtils::convert_html_to_text($this->getBody()),
-            'text/plain',
             'utf-8'
         );
 
@@ -394,7 +385,7 @@ class BetterEmail extends Email
      * content to
      *
      * @param string $template
-     * @return $this
+     * @return static
      */
     public function setHTMLTemplate(string $template): static
     {
@@ -459,10 +450,7 @@ class BetterEmail extends Email
      */
     public function render($plainOnly = false)
     {
-        if ($existingPlainPart = $this->findPlainPart()) {
-            $this->getSwiftMessage()->detach($existingPlainPart);
-        }
-        unset($existingPlainPart);
+        $this->text(null);
 
         // Respect explicitly set body
         $htmlPart = $plainPart = null;
@@ -485,14 +473,14 @@ class BetterEmail extends Email
 
         // Render plain part
         if ($plainTemplate && !$plainPart) {
-            $plainPart = $this->renderWith($plainTemplate, $this->getData())->Plain();
+            $plainPart = $this->getData()->renderWith($plainTemplate, $this->getData())->Plain();
             // Do another round of rendering to render our variables inside
             $plainPart = $this->renderWithData($plainPart);
         }
 
         // Render HTML part, either if sending html email, or a plain part is lacking
         if (!$htmlPart && $htmlTemplate && (!$plainOnly || empty($plainPart))) {
-            $htmlPart = $this->renderWith($htmlTemplate, $this->getData());
+            $htmlPart = $this->getData()->renderWith($htmlTemplate, $this->getData());
             // Do another round of rendering to render our variables inside
             $htmlPart = $this->renderWithData($htmlPart);
         }
@@ -521,18 +509,8 @@ class BetterEmail extends Email
         // Build HTML / Plain components
         if ($htmlPart && !$plainOnly) {
             $this->setBody($htmlPart);
-            $this->setContentType('text/html');
-            $this->getSwiftMessage()->setCharset('utf-8');
-            if ($plainPart) {
-                $this->getSwiftMessage()->addPart($plainPart, 'text/plain', 'utf-8');
-            }
-        } else {
-            if ($plainPart) {
-                $this->setBody($plainPart);
-            }
-            $this->getSwiftMessage()->setContentType('text/plain');
-            $this->getSwiftMessage()->setCharset('utf-8');
         }
+        $this->text($plainPart, 'utf-8');
 
         return $this;
     }
@@ -603,7 +581,7 @@ class BetterEmail extends Email
      * array('me@example.com' => 'My Name', 'other@example.com');
      *
      * @param string|array $address The message recipient(s) - if sending to multiple, use an array of address => name
-     * @param string|null $name The name of the recipient (if one)
+     * @param string $name The name of the recipient (if one)
      * @return static
      */
     public function setTo(string|array $address, string $name = ''): static
@@ -655,13 +633,23 @@ class BetterEmail extends Email
     }
 
     /**
+     * Wrapper to report proper SiteConfig type
+     *
+     * @return SiteConfig|EmailTemplateSiteConfigExtension
+     */
+    public function currentSiteConfig()
+    {
+        /** @var SiteConfig|EmailTemplateSiteConfigExtension */
+        return SiteConfig::current_site_config();
+    }
+    /**
      * Set to
      *
      * @return Email
      */
     public function setToContact()
     {
-        $email = SiteConfig::current_site_config()->EmailDefaultRecipient();
+        $email = $this->currentSiteConfig()->EmailDefaultRecipient();
         return $this->setTo($email);
     }
 
@@ -683,7 +671,7 @@ class BetterEmail extends Email
      */
     public function bccToContact()
     {
-        $email = SiteConfig::current_site_config()->EmailDefaultRecipient();
+        $email = $this->currentSiteConfig()->EmailDefaultRecipient();
         return $this->addBCC($email);
     }
 
@@ -749,7 +737,7 @@ class BetterEmail extends Email
      *
      * @param string|array $address
      * @param string|null $name
-     * @return $this
+     * @return static
      */
     public function setFrom(string|array $address, string $name = ''): static
     {

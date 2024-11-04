@@ -24,6 +24,7 @@ use LeKoala\EmailTemplates\Email\BetterEmail;
 use LeKoala\EmailTemplates\Helpers\EmailUtils;
 use LeKoala\EmailTemplates\Helpers\FluentHelper;
 use LeKoala\EmailTemplates\Admin\EmailTemplatesAdmin;
+use SilverStripe\Forms\HTMLEditor\HTMLEditorField;
 use SilverStripe\ORM\FieldType\DBHTMLText;
 
 /**
@@ -99,7 +100,7 @@ class Emailing extends DataObject
         $fields->replaceField('Recipients', $Recipients = new DropdownField('Recipients', null, $recipientsList));
         $Recipients->setDescription(_t('Emailing.EMAIL_COUNT', "Email will be sent to {count} members", ['count' => $this->getAllRecipients()->count()]));
 
-        /** @var DBHTMLText */
+        /** @var HTMLEditorField */
         $fCallout = $fields->dataFieldByName('Callout');
         $fCallout->setRows(5);
 
@@ -449,7 +450,7 @@ class Emailing extends DataObject
                 }
                 // Merge vars
                 if (!empty($mergeVars)) {
-                    $email->getSwiftMessage()->getHeaders()->addTextHeader($mergeVarHeader, json_encode($mergeVarsData));
+                    $email->getHeaders()->addTextHeader($mergeVarHeader, json_encode($mergeVarsData));
                 }
                 // Localize
                 $EmailingID = $this->ID;

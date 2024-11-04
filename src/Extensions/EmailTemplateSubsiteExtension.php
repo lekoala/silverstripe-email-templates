@@ -3,6 +3,9 @@
 namespace LeKoala\EmailTemplates\Extensions;
 
 use LeKoala\EmailTemplates\Helpers\SubsiteHelper;
+use LeKoala\EmailTemplates\Models\Emailing;
+use LeKoala\EmailTemplates\Models\EmailTemplate;
+use LeKoala\EmailTemplates\Models\SentEmail;
 use SilverStripe\ORM\DataQuery;
 use SilverStripe\ORM\DataExtension;
 use SilverStripe\Security\Permission;
@@ -11,7 +14,8 @@ use SilverStripe\Security\Member;
 
 /**
  * Add subsites support
- *
+ * 
+ * @property-read EmailTemplate|SentEmail|Emailing $owner
  * @author lekoala
  */
 class EmailSubsiteExtension extends DataExtension
