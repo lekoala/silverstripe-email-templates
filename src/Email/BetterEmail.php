@@ -172,7 +172,7 @@ class BetterEmail extends Email
      */
     public function getRenderedBody()
     {
-        $this->updateHtmlAndTextWithRenderedTemplates();
+        $this->render();
         return $this->getHtmlBody();
     }
 
@@ -397,7 +397,7 @@ class BetterEmail extends Email
     private function internalSendPlain()
     {
         $html = $this->getHtmlBody();
-        $this->updateHtmlAndTextWithRenderedTemplates(true);
+        $this->render(true);
         $this->html(null);
         Injector::inst()->get(MailerInterface::class)->send($this);
         $this->html($html);
@@ -405,7 +405,7 @@ class BetterEmail extends Email
 
     private function internalSend()
     {
-        $this->updateHtmlAndTextWithRenderedTemplates();
+        $this->render();
         Injector::inst()->get(MailerInterface::class)->send($this);
     }
 
@@ -521,7 +521,7 @@ class BetterEmail extends Email
      *
      * @param bool $plainOnly - if true then do not call html()
      */
-    private function updateHtmlAndTextWithRenderedTemplates(bool $plainOnly = false): void
+    public function render(bool $plainOnly = false): void
     {
         // Respect explicitly set body
         $htmlBody = $plainBody = null;
@@ -575,13 +575,13 @@ class BetterEmail extends Email
         $subject = preg_replace("/<!--(.)+-->/", "", $subject);
         parent::setSubject($subject);
 
-        // Rendering is finished
-        Requirements::restore();
-
         // Plain render fallbacks to using the html render with html tags removed
         if (!$plainRender && $htmlRender) {
             $plainRender = EmailUtils::convert_html_to_text($htmlRender);
         }
+
+        // Rendering is finished
+        Requirements::restore();
 
         // Handle edge case where no template was found
         if (!$htmlRender && $htmlBody) {
