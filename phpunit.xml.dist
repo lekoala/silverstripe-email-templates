@@ -18,4 +18,12 @@
             <directory suffix=".php">src/</directory>
         </include>
     </coverage>
+    <php>
+        <env name="SS_IGNORE_DOT_ENV" value="true" />
+        <env name="SS_DATABASE_CLASS" value="MySQLDatabase" />
+        <env name="SS_DATABASE_SERVER" value="127.0.0.1" />
+        <env name="SS_DATABASE_USERNAME" value="root" />
+        <env name="SS_DATABASE_PASSWORD" value="secret" />
+        <env name="SS_DATABASE_CHOOSE_NAME" value="true" />
+    </php>
 </phpunit>

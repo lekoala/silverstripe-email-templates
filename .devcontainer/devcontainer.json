@@ -6,12 +6,5 @@
             "extensionsExtra": "intl mysqli mbstring"
         }
     },
-    "postCreateCommand": "./.devcontainer/init.sh",
-    "containerEnv": {
-        "SS_DATABASE_CLASS": "MySQLDatabase",
-        "SS_DATABASE_SERVER": "127.0.0.1",
-        "SS_DATABASE_USERNAME": "root",
-        "SS_DATABASE_PASSWORD": "secret",
-        "SS_DATABASE_CHOOSE_NAME": "true"
-    }
+    "postCreateCommand": "./.devcontainer/init.sh"
 }

@@ -18,9 +18,12 @@ use LeKoala\EmailTemplates\Models\SentEmail;
 use LeKoala\EmailTemplates\Helpers\EmailUtils;
 use LeKoala\EmailTemplates\Models\EmailTemplate;
 use LeKoala\EmailTemplates\Helpers\SubsiteHelper;
+use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Security\DefaultAdminService;
+use SilverStripe\View\ArrayData;
 use SilverStripe\View\ViewableData;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
+use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Part\AbstractPart;
 
 /**
@@ -97,6 +100,14 @@ class BetterEmail extends Email
     protected $sendingCancelled = false;
 
     /**
+     * Additional data available in a template.
+     * Used in the same way than {@link ViewableData->customize()}.
+     */
+    private ViewableData $data;
+
+    private bool $dataHasBeenSet = false;
+
+    /**
      * Email constructor.
      * @param string|array $from
      * @param string|array $to
@@ -122,6 +133,7 @@ class BetterEmail extends Email
             // Call method because variable is private
             parent::setHTMLTemplate($defaultTemplate);
         }
+        $this->data = ViewableData::create();
     }
 
     /**
@@ -160,7 +172,7 @@ class BetterEmail extends Email
      */
     public function getRenderedBody()
     {
-        $this->render();
+        $this->updateHtmlAndTextWithRenderedTemplates();
         return $this->getHtmlBody();
     }
 
@@ -192,6 +204,59 @@ class BetterEmail extends Email
     }
 
     /**
+     * Get data which is exposed to the template
+     *
+     * The following data is exposed via this method by default:
+     * IsEmail: used to detect if rendering an email template rather than a page template
+     * BaseUrl: used to get the base URL for the email
+     */
+    public function getData(): ViewableData
+    {
+        $extraData = [
+            'IsEmail' => true,
+            'BaseURL' => Director::absoluteBaseURL(),
+        ];
+        $data = clone $this->data;
+        foreach ($extraData as $key => $value) {
+            // @phpstan-ignore-next-line
+            if (is_null($data->{$key})) {
+                $data->{$key} = $value;
+            }
+        }
+        $this->extend('updateGetData', $data);
+        return $data;
+    }
+
+    /**
+     * Add data to be used in the template
+     *
+     * Calling addData() once means that any content set via text()/html()/setBody() will have no effect
+     *
+     * @param string|array $nameOrData can be either the name to add, or an array of [name => value]
+     */
+    public function addData(string|array $nameOrData, mixed $value = null): static
+    {
+        if (is_array($nameOrData)) {
+            foreach ($nameOrData as $key => $val) {
+                $this->data->{$key} = $val;
+            }
+        } else {
+            $this->data->{$nameOrData} = $value;
+        }
+        $this->dataHasBeenSet = true;
+        return $this;
+    }
+
+    /**
+     * Remove a single piece of template data
+     */
+    public function removeData(string $name)
+    {
+        $this->data->{$name} = null;
+        return $this;
+    }
+
+    /**
      * @param array|ViewableData $data The template data to set
      * @return $this
      */
@@ -200,15 +265,30 @@ class BetterEmail extends Email
         // Merge data!
         if ($this->emailTemplate) {
             if (is_array($data)) {
-                parent::addData($data);
+                $this->setDataInternal($data);
             } elseif ($data instanceof DataObject) {
-                parent::addData($data->toMap());
+                $this->setDataInternal($data->toMap());
             } else {
-                parent::setData($data);
+                $this->setDataInternal($data);
             }
         } else {
-            parent::setData($data);
+            $this->setDataInternal($data);
         }
+        return $this;
+    }
+
+    /**
+     * Set template data
+     *
+     * Calling setData() once means that any content set via text()/html()/setBody() will have no effect
+     */
+    protected function setDataInternal(array|ViewableData $data)
+    {
+        if (is_array($data)) {
+            $data = ArrayData::create($data);
+        }
+        $this->data = $data;
+        $this->dataHasBeenSet = true;
         return $this;
     }
 
@@ -296,9 +376,9 @@ class BetterEmail extends Email
         try {
             $res = true;
             if ($plain) {
-                parent::sendPlain();
+                $this->internalSendPlain();
             } else {
-                parent::send();
+                $this->internalSend();
             }
         } catch (TransportExceptionInterface $th) {
             $res = $th->getMessage();
@@ -312,6 +392,21 @@ class BetterEmail extends Email
         $this->sentMail = $this->persist($res);
 
         return $res;
+    }
+
+    private function internalSendPlain()
+    {
+        $html = $this->getHtmlBody();
+        $this->updateHtmlAndTextWithRenderedTemplates(true);
+        $this->html(null);
+        Injector::inst()->get(MailerInterface::class)->send($this);
+        $this->html($html);
+    }
+
+    private function internalSend()
+    {
+        $this->updateHtmlAndTextWithRenderedTemplates();
+        Injector::inst()->get(MailerInterface::class)->send($this);
     }
 
     /**
@@ -414,52 +509,63 @@ class BetterEmail extends Email
     {
         $viewer = SSViewer::fromString($content);
         $data = $this->getData();
-        
+
         $result = (string) $viewer->process($data);
         $result = self::rewriteURLs($result);
         return $result;
     }
 
     /**
-     * Render the email
-     * @param bool $plainOnly Only render the message as plain text
-     * @return $this
+     * Call html() and/or text() after rendering email templates
+     * If either body html or text were previously explicitly set, those values will not be overwritten
+     *
+     * @param bool $plainOnly - if true then do not call html()
      */
-    public function render($plainOnly = false)
+    private function updateHtmlAndTextWithRenderedTemplates(bool $plainOnly = false): void
     {
-        $this->text(null);
-
+        echo "CORRECT updateHtmlAndTextWithRenderedTemplates\n";
         // Respect explicitly set body
-        $htmlPart = $plainPart = null;
+        $htmlBody = $plainBody = null;
 
         // Only respect if we don't have an email template
         if ($this->emailTemplate) {
-            $htmlPart = $plainOnly ? null : $this->getHtmlBody();
-            $plainPart = $plainOnly ? $this->getTextBody() : null;
+            $htmlBody = $plainOnly ? null : $this->getHtmlBody();
+            $plainBody = $plainOnly ? $this->getTextBody() : null;
         }
 
         // Ensure we can at least render something
         $htmlTemplate = $this->getHTMLTemplate();
         $plainTemplate = $this->getPlainTemplate();
-        if (!$htmlTemplate && !$plainTemplate && !$plainPart && !$htmlPart) {
-            return $this;
+        if (!$htmlTemplate && !$plainTemplate && !$plainBody && !$htmlBody) {
+            return;
+        }
+
+        $htmlRender = null;
+        $plainRender = null;
+
+        if ($htmlBody && !$this->dataHasBeenSet) {
+            $htmlRender = $htmlBody;
+        }
+
+        if ($plainBody && !$this->dataHasBeenSet) {
+            $plainRender = $plainBody;
         }
 
         // Do not interfere with emails styles
         Requirements::clear();
 
-        // Render plain part
-        if ($plainTemplate && !$plainPart) {
-            $plainPart = $this->getData()->renderWith($plainTemplate, $this->getData())->Plain();
+        // Render plain
+        if (!$plainRender && $plainTemplate) {
+            $plainRender = $this->getData()->renderWith($plainTemplate)->Plain();
             // Do another round of rendering to render our variables inside
-            $plainPart = $this->renderWithData($plainPart);
+            $plainRender = $this->renderWithData($plainRender);
         }
 
         // Render HTML part, either if sending html email, or a plain part is lacking
-        if (!$htmlPart && $htmlTemplate && (!$plainOnly || empty($plainPart))) {
-            $htmlPart = $this->getData()->renderWith($htmlTemplate, $this->getData());
+        if (!$htmlRender && $htmlTemplate && (!$plainOnly || empty($plainRender))) {
+            $htmlRender = $this->getData()->renderWith($htmlTemplate)->RAW();
             // Do another round of rendering to render our variables inside
-            $htmlPart = $this->renderWithData($htmlPart);
+            $htmlRender = $this->renderWithData($htmlRender);
         }
 
         // Render subject with data as well
@@ -470,26 +576,29 @@ class BetterEmail extends Email
         $subject = preg_replace("/<!--(.)+-->/", "", $subject);
         parent::setSubject($subject);
 
-        // Plain part fails over to generated from html
-        if (!$plainPart && $htmlPart) {
-            $plainPart = EmailUtils::convert_html_to_text($htmlPart);
-        }
-
         // Rendering is finished
         Requirements::restore();
 
-        // Fail if no email to send
-        if (!$plainPart && !$htmlPart) {
-            return $this;
+        // Plain render fallbacks to using the html render with html tags removed
+        if (!$plainRender && $htmlRender) {
+            $plainRender = EmailUtils::convert_html_to_text($htmlRender);
         }
 
-        // Build HTML / Plain components
-        if ($htmlPart && !$plainOnly) {
-            $this->setBody($htmlPart);
+        // Handle edge case where no template was found
+        if (!$htmlRender && $htmlBody) {
+            $htmlRender = $htmlBody;
         }
-        $this->text($plainPart, 'utf-8');
 
-        return $this;
+        if (!$plainRender && $plainBody) {
+            $plainRender = $plainBody;
+        }
+
+        if ($plainRender) {
+            $this->text($plainRender);
+        }
+        if ($htmlRender && !$plainOnly) {
+            $this->html($htmlRender);
+        }
     }
 
     /**
@@ -757,8 +866,11 @@ class BetterEmail extends Email
     /**
      * Turn all relative URLs in the content to absolute URLs
      */
-    protected static function rewriteURLs($html)
+    protected static function rewriteURLs(AbstractPart|string $html = null)
     {
+        if ($html instanceof AbstractPart) {
+            $html = $html->bodyToString();
+        }
         if (isset($_SERVER['REQUEST_URI'])) {
             $html = str_replace('$CurrentPageURL', $_SERVER['REQUEST_URI'], $html ?? '');
         }
