@@ -523,7 +523,6 @@ class BetterEmail extends Email
      */
     private function updateHtmlAndTextWithRenderedTemplates(bool $plainOnly = false): void
     {
-        echo "CORRECT updateHtmlAndTextWithRenderedTemplates\n";
         // Respect explicitly set body
         $htmlBody = $plainBody = null;
 
