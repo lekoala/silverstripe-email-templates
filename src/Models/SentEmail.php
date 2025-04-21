@@ -29,6 +29,7 @@ use SilverStripe\Security\Permission;
  * @property string|null $Results
  * @property string $ReplyTo
  * @property string $Headers
+ * @property int|boolean $Compressed
  * @author lekoala
  */
 class SentEmail extends DataObject
@@ -45,6 +46,7 @@ class SentEmail extends DataObject
         'CC' => 'Text',
         'BCC' => 'Text',
         'Results' => 'Text',
+        'Compressed' => 'Boolean',
     ];
     private static $summary_fields = [
         'Created.Nice' => 'Date',
@@ -52,7 +54,33 @@ class SentEmail extends DataObject
         'Subject' => 'Subject',
         'IsSuccess' => 'Success',
     ];
+
+    private static $indexes = [
+        'Compressed' => true,
+    ];
+
     private static $default_sort = 'Created DESC';
+
+    private static $gzip_body = false;
+
+    public function setBody(string $v)
+    {
+        if ($this->config()->get('gzip_body') && function_exists('gzcompress')) {
+            $this->record['Body'] = gzcompress($v);
+            $this->record['Compressed'] = 1;
+        } else {
+            $this->record['Body'] = $v;
+            $this->record['Compressed'] = 0;
+        }
+    }
+
+    public function getBody(): string
+    {
+        if (!$this->config()->get('gzip_body') || !$this->record['Compressed'] || !function_exists('gzcompress')) {
+            return $this->record['Body'];
+        }
+        return gzuncompress($this->record['Body']);
+    }
 
     /**
      * Gets a list of actions for the ModelAdmin interface
@@ -105,6 +133,7 @@ class SentEmail extends DataObject
 
         $this->extend('updateCMSFields', $f);
 
+        $f->removeByName('Compressed');
         return $f;
     }
 

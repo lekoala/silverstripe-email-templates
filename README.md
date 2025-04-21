@@ -15,6 +15,7 @@ Features
 - Override framework or other module emails
 - Store sent emails for tracking
 - Emailing
+- Sent emails' bodies compression (optional)
 
 Predefined templates
 ==================
@@ -161,7 +162,6 @@ Sent emails table is periodically cleaned up. You can configure the following
       # possible values : 'time' or 'max'
       cleanup_method: 'max'
       cleanup_time: '-7 days'
-```
 
 Emailings
 ==================
@@ -225,6 +225,23 @@ recipients. You can set this behaviour to false if needed.
 ```yml
     LeKoala\EmailTemplates\Models\Emailing:
       send_bcc: false
+```
+
+Sent email's Body compression
+==================
+You can enable compression for the bodies of the sent emails. This may dramatically reduce the size of the `SentEmail` table in case your emails motly contain HTML. Be aware that the compression will make the Bodies' content not searchable any more.
+
+The code supports a mix of compressed and uncompressed bodies in the database. You can enable the feature mid-way and have all the next recorded bodies compressed.
+
+```yml
+    LeKoala\EmailTemplates\Models\SentEmail:
+      gzip_body: true
+```
+
+The package also contains a script that can compress the previously recorded bodies. 
+
+```bash
+vendor/bin/sake dev/tasks/CompressEmailBodiesTask
 ```
 
 Finding a good template
