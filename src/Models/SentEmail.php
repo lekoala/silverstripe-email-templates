@@ -2,7 +2,7 @@
 
 namespace LeKoala\EmailTemplates\Models;
 
-use LeKoala\Base\Actions\CustomAction;
+use LeKoala\CmsActions\CustomAction;
 use SilverStripe\Admin\AdminRootController;
 use LeKoala\EmailTemplates\Admin\EmailTemplatesAdmin;
 use LeKoala\EmailTemplates\Email\BetterEmail;
