@@ -61,25 +61,35 @@ class SentEmail extends DataObject
 
     private static $default_sort = 'Created DESC';
 
-    private static $gzip_body = false;
+    private static $compress_body = false;
 
     public function setBody(string $v)
     {
-        if ($this->config()->get('gzip_body') && function_exists('gzcompress')) {
-            $this->record['Body'] = gzcompress($v);
-            $this->record['Compressed'] = 1;
-        } else {
-            $this->record['Body'] = $v;
-            $this->record['Compressed'] = 0;
+        if ($this->config()->get('compress_body') && function_exists('gzdeflate')) {
+            $compressed = self::COMPRESSED_SIGNATURE . base64_encode(gzdeflate($v, 9)); // Use maximum compression level
+            if ($compressed !== false) {
+                $this->record['Body'] = $compressed;
+                $this->record['Compressed'] = 1;
+                return;
+            }
         }
+        $this->record['Body'] = $v;
+        $this->record['Compressed'] = 0;
     }
 
+    const COMPRESSED_SIGNATURE = 'base64/deflate:';
     public function getBody(): string
     {
-        if (!$this->config()->get('gzip_body') || !$this->record['Compressed'] || !function_exists('gzcompress')) {
-            return $this->record['Body'];
+        $body = $this->record['Body'];
+        // dd($this->record['Body']);
+        if (substr($body, 0, strlen(self::COMPRESSED_SIGNATURE)) == self::COMPRESSED_SIGNATURE) {
+            $raw = base64_decode(substr($body, strlen(self::COMPRESSED_SIGNATURE)));
+            if ($raw !== false) {
+                return gzinflate($raw);
+            }
         }
-        return gzuncompress($this->record['Body']);
+
+        return $body;
     }
 
     /**
