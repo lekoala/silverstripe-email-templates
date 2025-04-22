@@ -14,7 +14,7 @@ use SilverStripe\Security\Member;
 
 /**
  * Add subsites support
- * 
+ *
  * @property-read EmailTemplate|SentEmail|Emailing $owner
  * @author lekoala
  */
