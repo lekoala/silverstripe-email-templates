@@ -33,14 +33,14 @@ class CompressEmailBodiesTask extends BuildTask
     public function run($request)
     {
         $table = SentEmail::singleton()->baseTable();
-        $total = DB::query("SELECT COUNT(ID) FROM \"$table\" WHERE \"Compressed\" = 0")->value();
+        $total = DB::query("SELECT COUNT(ID) FROM \"$table\" WHERE \"Body\" NOT LIKE '" . SentEmail::COMPRESSED_SIGNATURE . "%'")->value();
 
         if (!$total) {
             echo "No non-compressed emails found\n";
             return;
         }
 
-        $nonCompressed = DB::query("SELECT ID, \"Body\" FROM \"$table\" WHERE \"Compressed\" = 0");
+        $nonCompressed = DB::query("SELECT ID, \"Body\" FROM \"$table\" \"Body\" NOT LIKE '" . SentEmail::COMPRESSED_SIGNATURE . "%'");
 
         echo "Found " . $total . " non-compressed emails\n";
 
@@ -59,7 +59,6 @@ class CompressEmailBodiesTask extends BuildTask
 
             SQLUpdate::create($table, [
                 'Body' => $base64compressed,
-                'Compressed' => 1,
             ], [
                 'ID' => $row['ID'],
             ])->execute();

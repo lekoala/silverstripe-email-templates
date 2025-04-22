@@ -29,7 +29,6 @@ use SilverStripe\Security\Permission;
  * @property string|null $Results
  * @property string $ReplyTo
  * @property string $Headers
- * @property int|boolean $Compressed
  * @author lekoala
  */
 class SentEmail extends DataObject
@@ -46,17 +45,12 @@ class SentEmail extends DataObject
         'CC' => 'Text',
         'BCC' => 'Text',
         'Results' => 'Text',
-        'Compressed' => 'Boolean',
     ];
     private static $summary_fields = [
         'Created.Nice' => 'Date',
         'To' => 'To',
         'Subject' => 'Subject',
         'IsSuccess' => 'Success',
-    ];
-
-    private static $indexes = [
-        'Compressed' => true,
     ];
 
     private static $default_sort = 'Created DESC';
@@ -69,12 +63,10 @@ class SentEmail extends DataObject
             $compressed = self::COMPRESSED_SIGNATURE . base64_encode(gzdeflate($v, 9)); // Use maximum compression level
             if ($compressed !== false) {
                 $this->record['Body'] = $compressed;
-                $this->record['Compressed'] = 1;
                 return;
             }
         }
         $this->record['Body'] = $v;
-        $this->record['Compressed'] = 0;
     }
 
     const COMPRESSED_SIGNATURE = 'base64/deflate:';
@@ -143,7 +135,6 @@ class SentEmail extends DataObject
 
         $this->extend('updateCMSFields', $f);
 
-        $f->removeByName('Compressed');
         return $f;
     }
 
