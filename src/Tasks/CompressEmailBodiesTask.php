@@ -104,7 +104,7 @@ class CompressEmailBodiesTask extends BuildTask
             $percentInt = floor($percent);
 
             $spinner = "\rConverting: [";
-            $spinner .= str_repeat('￭', floor($percentInt / 5));
+            $spinner .= str_repeat('￭', (int)floor($percentInt / 5));
             $edge = self::PROGRRESS_SPINNER[$pos % count(self::PROGRRESS_SPINNER)];
             $spinner .= "$edge";
             $spinner .= str_repeat(' ', 40 - strlen($spinner));
