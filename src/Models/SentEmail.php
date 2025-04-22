@@ -73,8 +73,11 @@ class SentEmail extends DataObject
     public function getBody(): string
     {
         $body = $this->record['Body'];
-        // dd($this->record['Body']);
+
         if (substr($body, 0, strlen(self::COMPRESSED_SIGNATURE)) == self::COMPRESSED_SIGNATURE) {
+            if (!function_exists('gzinflate')) {
+                return 'This email body is compressed with zlib. Please install zlib module to see it.';
+            }
             $raw = base64_decode(substr($body, strlen(self::COMPRESSED_SIGNATURE)));
             if ($raw !== false) {
                 return gzinflate($raw);

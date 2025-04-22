@@ -15,7 +15,7 @@ Features
 - Override framework or other module emails
 - Store sent emails for tracking
 - Emailing
-- Sent emails' bodies compression (optional)
+- Sent emails' bodies compression (optional, requires `zlib`)
 
 Predefined templates
 ==================
@@ -230,7 +230,8 @@ recipients. You can set this behaviour to false if needed.
 
 Sent email's Body compression
 ==================
-You can enable compression for the bodies of the sent emails. This may dramatically reduce the size of the `SentEmail` table in case your emails motly contain HTML. Be aware that the compression will make the Bodies' content not searchable any more.
+
+You can enable compression for the bodies of the sent emails (using `zlib`). This may dramatically reduce the size of the `SentEmail` table in case your emails motly contain HTML. Be aware that the compression will make the Bodies' content not searchable any more.
 
 The code supports a mix of compressed and uncompressed bodies in the database. You can enable the feature mid-way and have all the next recorded bodies compressed.
 
