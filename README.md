@@ -162,6 +162,7 @@ Sent emails table is periodically cleaned up. You can configure the following
       # possible values : 'time' or 'max'
       cleanup_method: 'max'
       cleanup_time: '-7 days'
+```
 
 Emailings
 ==================
