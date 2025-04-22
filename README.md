@@ -237,7 +237,7 @@ The code supports a mix of compressed and uncompressed bodies in the database. Y
 
 ```yml
     LeKoala\EmailTemplates\Models\SentEmail:
-      gzip_body: true
+      compress_body: true
 ```
 
 The package also contains a script that can compress the previously recorded bodies. 
