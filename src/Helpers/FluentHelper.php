@@ -2,7 +2,6 @@
 
 namespace LeKoala\EmailTemplates\Helpers;
 
-use InvalidArgumentException;
 use SilverStripe\i18n\i18n;
 use TractorCow\Fluent\Model\Locale;
 use TractorCow\Fluent\State\FluentState;
@@ -48,6 +47,9 @@ class FluentHelper
      */
     public static function isClassTranslated($class)
     {
+        if (!class_exists(FluentExtension::class)) {
+            return false;
+        }
         $singl = singleton($class);
         return $singl->hasExtension(FluentExtension::class);
     }
@@ -61,7 +63,7 @@ class FluentHelper
      */
     public static function withLocale($locale, $cb)
     {
-        if (!self::usesFluent() || !$locale) {
+        if (!self::usesFluent() || !$locale || !class_exists(FluentState::class)) {
             $cb();
             return;
         }
@@ -83,7 +85,7 @@ class FluentHelper
      */
     public static function withLocales($cb)
     {
-        if (!self::usesFluent()) {
+        if (!self::usesFluent() || !class_exists(Locale::class)) {
             $cb();
             return [];
         }

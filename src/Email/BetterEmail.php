@@ -3,24 +3,28 @@
 namespace LeKoala\EmailTemplates\Email;
 
 use Exception;
-use Swift_MimePart;
 use BadMethodCallException;
+use LeKoala\EmailTemplates\Extensions\EmailTemplateSiteConfigExtension;
 use SilverStripe\i18n\i18n;
 use SilverStripe\Control\HTTP;
 use SilverStripe\View\SSViewer;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Security\Member;
 use SilverStripe\Control\Director;
-use SilverStripe\Security\Security;
 use SilverStripe\View\Requirements;
-use SilverStripe\Control\Controller;
-use SilverStripe\Core\Config\Config;
 use SilverStripe\Control\Email\Email;
 use SilverStripe\SiteConfig\SiteConfig;
 use LeKoala\EmailTemplates\Models\SentEmail;
 use LeKoala\EmailTemplates\Helpers\EmailUtils;
 use LeKoala\EmailTemplates\Models\EmailTemplate;
 use LeKoala\EmailTemplates\Helpers\SubsiteHelper;
+use SilverStripe\Core\Injector\Injector;
+use SilverStripe\Security\DefaultAdminService;
+use SilverStripe\View\ArrayData;
+use SilverStripe\View\ViewableData;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Part\AbstractPart;
 
 /**
  * An improved and more pleasant base Email class to use on your project
@@ -51,7 +55,7 @@ class BetterEmail extends Email
     const STATE_FAILED = 'failed';
 
     /**
-     * @var EmailTemplate
+     * @var EmailTemplate|null
      */
     protected $emailTemplate;
 
@@ -61,12 +65,22 @@ class BetterEmail extends Email
     protected $locale;
 
     /**
-     * @var Member
+     * @var string
+     */
+    protected $to;
+
+    /**
+     * @var Member|null
      */
     protected $to_member;
 
     /**
-     * @var Member
+     * @var string
+     */
+    protected $from;
+
+    /**
+     * @var Member|null
      */
     protected $from_member;
 
@@ -76,7 +90,7 @@ class BetterEmail extends Email
     protected $disabled = false;
 
     /**
-     * @var SentMail
+     * @var SentEmail|null
      */
     protected $sentMail = null;
 
@@ -86,52 +100,61 @@ class BetterEmail extends Email
     protected $sendingCancelled = false;
 
     /**
+     * Additional data available in a template.
+     * Used in the same way than {@link ViewableData->customize()}.
+     */
+    private ViewableData $data;
+
+    private bool $dataHasBeenSet = false;
+
+    /**
      * Email constructor.
-     * @param string|array|null $from
-     * @param string|array|null $to
-     * @param string|null $subject
-     * @param string|null $body
-     * @param string|array|null $cc
-     * @param string|array|null $bcc
-     * @param string|null $returnPath
+     * @param string|array $from
+     * @param string|array $to
+     * @param string $subject
+     * @param string $body
+     * @param string|array $cc
+     * @param string|array $bcc
+     * @param string $returnPath
      */
     public function __construct(
-        $from = null,
-        $to = null,
-        $subject = null,
-        $body = null,
-        $cc = null,
-        $bcc = null,
-        $returnPath = null
+        string|array $from = '',
+        string|array $to = '',
+        string $subject = '',
+        string $body = '',
+        string|array $cc = '',
+        string|array $bcc = '',
+        string $returnPath = ''
     ) {
         parent::__construct($from, $to, $subject, $body, $cc, $bcc, $returnPath);
 
         // Use template as a layout
-        if ($defaultTemplate = self::config()->template) {
+        if ($defaultTemplate = self::config()->get('template')) {
             // Call method because variable is private
             parent::setHTMLTemplate($defaultTemplate);
         }
+        $this->data = ViewableData::create();
     }
 
     /**
      * Persists the email to the database
      *
-     * @param bool|array $results
+     * @param bool|array|string $results
      * @return SentEmail
      */
     protected function persist($results)
     {
-        $record = SentEmail::create(array(
+        $record = SentEmail::create([
             'To' => EmailUtils::format_email_addresses($this->getTo()),
             'From' => EmailUtils::format_email_addresses($this->getFrom()),
             'ReplyTo' => EmailUtils::format_email_addresses($this->getReplyTo()),
             'Subject' => $this->getSubject(),
             'Body' => $this->getRenderedBody(),
-            'Headers' => $this->getSwiftMessage()->getHeaders()->toString(),
+            'Headers' => $this->getHeaders()->toString(),
             'CC' => EmailUtils::format_email_addresses($this->getCC()),
             'BCC' => EmailUtils::format_email_addresses($this->getBCC()),
             'Results' => json_encode($results),
-        ));
+        ]);
         $record->write();
 
         // TODO: migrate this to a cron task
@@ -150,7 +173,7 @@ class BetterEmail extends Email
     public function getRenderedBody()
     {
         $this->render();
-        return $this->getSwiftMessage()->getBody();
+        return $this->getHtmlBody();
     }
 
     /**
@@ -159,7 +182,7 @@ class BetterEmail extends Email
      * URLs are rewritten by render process
      *
      * @param string $body
-     * @return $this
+     * @return static
      */
     public function addBody($body)
     {
@@ -168,19 +191,68 @@ class BetterEmail extends Email
 
     /**
      * @param string $body The email body
-     * @return $this
+     * @return static
      */
-    public function setBody($body)
+    public function setBody(AbstractPart|string $body = null): static
     {
-        $plainPart = $this->findPlainPart();
-        if ($plainPart) {
-            $this->getSwiftMessage()->detach($plainPart);
-        }
-        unset($plainPart);
+        $this->text(null);
 
         $body = self::rewriteURLs($body);
-        $this->getSwiftMessage()->setBody($body);
+        parent::setBody($body);
 
+        return $this;
+    }
+
+    /**
+     * Get data which is exposed to the template
+     *
+     * The following data is exposed via this method by default:
+     * IsEmail: used to detect if rendering an email template rather than a page template
+     * BaseUrl: used to get the base URL for the email
+     */
+    public function getData(): ViewableData
+    {
+        $extraData = [
+            'IsEmail' => true,
+            'BaseURL' => Director::absoluteBaseURL(),
+        ];
+        $data = clone $this->data;
+        foreach ($extraData as $key => $value) {
+            // @phpstan-ignore-next-line
+            if (is_null($data->{$key})) {
+                $data->{$key} = $value;
+            }
+        }
+        $this->extend('updateGetData', $data);
+        return $data;
+    }
+
+    /**
+     * Add data to be used in the template
+     *
+     * Calling addData() once means that any content set via text()/html()/setBody() will have no effect
+     *
+     * @param string|array $nameOrData can be either the name to add, or an array of [name => value]
+     */
+    public function addData(string|array $nameOrData, mixed $value = null): static
+    {
+        if (is_array($nameOrData)) {
+            foreach ($nameOrData as $key => $val) {
+                $this->data->{$key} = $val;
+            }
+        } else {
+            $this->data->{$nameOrData} = $value;
+        }
+        $this->dataHasBeenSet = true;
+        return $this;
+    }
+
+    /**
+     * Remove a single piece of template data
+     */
+    public function removeData(string $name)
+    {
+        $this->data->{$name} = null;
         return $this;
     }
 
@@ -193,43 +265,58 @@ class BetterEmail extends Email
         // Merge data!
         if ($this->emailTemplate) {
             if (is_array($data)) {
-                parent::addData($data);
+                $this->setDataInternal($data);
             } elseif ($data instanceof DataObject) {
-                parent::addData($data->toMap());
+                $this->setDataInternal($data->toMap());
             } else {
-                parent::setData($data);
+                $this->setDataInternal($data);
             }
         } else {
-            parent::setData($data);
+            $this->setDataInternal($data);
         }
+        return $this;
+    }
+
+    /**
+     * Set template data
+     *
+     * Calling setData() once means that any content set via text()/html()/setBody() will have no effect
+     */
+    protected function setDataInternal(array|ViewableData $data)
+    {
+        if (is_array($data)) {
+            $data = ArrayData::create($data);
+        }
+        $this->data = $data;
+        $this->dataHasBeenSet = true;
         return $this;
     }
 
     /**
      * Sends a HTML email
      *
-     * @return bool true if successful or array of failed recipients
+     * @return void
      */
-    public function send()
+    public function send(): void
     {
-        return $this->doSend(false);
+        $this->doSend(false);
     }
 
     /**
      * Sends a plain text email
      *
-     * @return bool true if successful or array of failed recipients
+     * @return void
      */
-    public function sendPlain()
+    public function sendPlain(): void
     {
-        return $this->doSend(true);
+        $this->doSend(true);
     }
 
     /**
      * Send this email
      *
      * @param bool $plain
-     * @return bool true if successful or array of failed recipients
+     * @return bool|string true if successful or error string on failure
      * @throws Exception
      */
     public function doSend($plain = false)
@@ -251,7 +338,7 @@ class BetterEmail extends Email
             return false;
         }
 
-        $SiteConfig = SiteConfig::current_site_config();
+        $SiteConfig = $this->currentSiteConfig();
 
         // Check for Sender and use default if necessary
         $from = $this->getFrom();
@@ -275,6 +362,7 @@ class BetterEmail extends Email
         $member = $this->to_member;
         if ($member) {
             // Maybe this member doesn't want to receive emails?
+            // @phpstan-ignore-next-line
             if ($member->hasMethod('canReceiveEmails') && !$member->canReceiveEmails()) {
                 return false;
             }
@@ -285,11 +373,15 @@ class BetterEmail extends Email
             $this->clearBody();
         }
 
-        if ($plain) {
-            // sendPlain will trigger our updated generatePlainPartFromBody
-            $res = parent::sendPlain();
-        } else {
-            $res = parent::send();
+        try {
+            $res = true;
+            if ($plain) {
+                $this->internalSendPlain();
+            } else {
+                $this->internalSend();
+            }
+        } catch (TransportExceptionInterface $th) {
+            $res = $th->getMessage();
         }
 
         if ($restore_locale) {
@@ -300,6 +392,21 @@ class BetterEmail extends Email
         $this->sentMail = $this->persist($res);
 
         return $res;
+    }
+
+    private function internalSendPlain()
+    {
+        $html = $this->getHtmlBody();
+        $this->render(true);
+        $this->html(null);
+        Injector::inst()->get(MailerInterface::class)->send($this);
+        $this->html($html);
+    }
+
+    private function internalSend()
+    {
+        $this->render();
+        Injector::inst()->get(MailerInterface::class)->send($this);
     }
 
     /**
@@ -334,7 +441,7 @@ class BetterEmail extends Email
     /**
      * The last result from "send" method. Null if not sent yet or sending was cancelled
      *
-     * @return SentMail
+     * @return SentEmail
      */
     public function getSentMail()
     {
@@ -342,33 +449,11 @@ class BetterEmail extends Email
     }
 
     /**
-     * Automatically adds a plain part to the email generated from the current Body
-     *
-     * @return $this
-     */
-    public function generatePlainPartFromBody()
-    {
-        $plainPart = $this->findPlainPart();
-        if ($plainPart) {
-            $this->getSwiftMessage()->detach($plainPart);
-        }
-        unset($plainPart);
-
-        $this->getSwiftMessage()->addPart(
-            EmailUtils::convert_html_to_text($this->getBody()),
-            'text/plain',
-            'utf-8'
-        );
-
-        return $this;
-    }
-
-    /**
      * @return $this
      */
     public function clearBody()
     {
-        $this->getSwiftMessage()->setBody(null);
+        $this->setBody(null);
         return $this;
     }
 
@@ -379,9 +464,9 @@ class BetterEmail extends Email
      * content to
      *
      * @param string $template
-     * @return $this
+     * @return static
      */
-    public function setHTMLTemplate($template)
+    public function setHTMLTemplate(string $template): static
     {
         if (substr($template, -3) == '.ss') {
             $template = substr($template, 0, -3);
@@ -424,62 +509,62 @@ class BetterEmail extends Email
     {
         $viewer = SSViewer::fromString($content);
         $data = $this->getData();
-        // SSViewer_DataPresenter requires array
-        if (is_object($data)) {
-            if (method_exists($data, 'toArray')) {
-                $data = $data->toArray();
-            } else {
-                $data = (array) $data;
-            }
-        }
-        $result = (string) $viewer->process($this, $data);
+
+        $result = (string) $viewer->process($data);
         $result = self::rewriteURLs($result);
         return $result;
     }
 
     /**
-     * Render the email
-     * @param bool $plainOnly Only render the message as plain text
-     * @return $this
+     * Call html() and/or text() after rendering email templates
+     * If either body html or text were previously explicitly set, those values will not be overwritten
+     *
+     * @param bool $plainOnly - if true then do not call html()
      */
-    public function render($plainOnly = false)
+    public function render(bool $plainOnly = false): void
     {
-        if ($existingPlainPart = $this->findPlainPart()) {
-            $this->getSwiftMessage()->detach($existingPlainPart);
-        }
-        unset($existingPlainPart);
-
         // Respect explicitly set body
-        $htmlPart = $plainPart = null;
+        $htmlBody = $plainBody = null;
 
         // Only respect if we don't have an email template
         if ($this->emailTemplate) {
-            $htmlPart = $plainOnly ? null : $this->getBody();
-            $plainPart = $plainOnly ? $this->getBody() : null;
+            $htmlBody = $plainOnly ? null : $this->getHtmlBody();
+            $plainBody = $plainOnly ? $this->getTextBody() : null;
         }
 
         // Ensure we can at least render something
         $htmlTemplate = $this->getHTMLTemplate();
         $plainTemplate = $this->getPlainTemplate();
-        if (!$htmlTemplate && !$plainTemplate && !$plainPart && !$htmlPart) {
-            return $this;
+        if (!$htmlTemplate && !$plainTemplate && !$plainBody && !$htmlBody) {
+            return;
+        }
+
+        $htmlRender = null;
+        $plainRender = null;
+
+        if ($htmlBody && !$this->dataHasBeenSet) {
+            $htmlRender = $htmlBody;
+        }
+
+        if ($plainBody && !$this->dataHasBeenSet) {
+            $plainRender = $plainBody;
         }
 
         // Do not interfere with emails styles
         Requirements::clear();
 
-        // Render plain part
-        if ($plainTemplate && !$plainPart) {
-            $plainPart = $this->renderWith($plainTemplate, $this->getData())->Plain();
+        // Render plain
+        if (!$plainRender && $plainTemplate) {
+            $plainRender = $this->getData()->renderWith($plainTemplate)->Plain();
             // Do another round of rendering to render our variables inside
-            $plainPart = $this->renderWithData($plainPart);
+            $plainRender = $this->renderWithData($plainRender);
         }
 
         // Render HTML part, either if sending html email, or a plain part is lacking
-        if (!$htmlPart && $htmlTemplate && (!$plainOnly || empty($plainPart))) {
-            $htmlPart = $this->renderWith($htmlTemplate, $this->getData());
+        if (!$htmlRender && $htmlTemplate && (!$plainOnly || empty($plainRender))) {
+            $htmlRender = $this->getData()->renderWith($htmlTemplate)->RAW();
             // Do another round of rendering to render our variables inside
-            $htmlPart = $this->renderWithData($htmlPart);
+            $htmlRender = $this->renderWithData($htmlRender);
         }
 
         // Render subject with data as well
@@ -490,36 +575,29 @@ class BetterEmail extends Email
         $subject = preg_replace("/<!--(.)+-->/", "", $subject);
         parent::setSubject($subject);
 
-        // Plain part fails over to generated from html
-        if (!$plainPart && $htmlPart) {
-            $plainPart = EmailUtils::convert_html_to_text($htmlPart);
+        // Plain render fallbacks to using the html render with html tags removed
+        if (!$plainRender && $htmlRender) {
+            $plainRender = EmailUtils::convert_html_to_text($htmlRender);
         }
 
         // Rendering is finished
         Requirements::restore();
 
-        // Fail if no email to send
-        if (!$plainPart && !$htmlPart) {
-            return $this;
+        // Handle edge case where no template was found
+        if (!$htmlRender && $htmlBody) {
+            $htmlRender = $htmlBody;
         }
 
-        // Build HTML / Plain components
-        if ($htmlPart && !$plainOnly) {
-            $this->setBody($htmlPart);
-            $this->getSwiftMessage()->setContentType('text/html');
-            $this->getSwiftMessage()->setCharset('utf-8');
-            if ($plainPart) {
-                $this->getSwiftMessage()->addPart($plainPart, 'text/plain', 'utf-8');
-            }
-        } else {
-            if ($plainPart) {
-                $this->setBody($plainPart);
-            }
-            $this->getSwiftMessage()->setContentType('text/plain');
-            $this->getSwiftMessage()->setCharset('utf-8');
+        if (!$plainRender && $plainBody) {
+            $plainRender = $plainBody;
         }
 
-        return $this;
+        if ($plainRender) {
+            $this->text($plainRender);
+        }
+        if ($htmlRender && !$plainOnly) {
+            $this->html($htmlRender);
+        }
     }
 
     /**
@@ -573,7 +651,7 @@ class BetterEmail extends Email
     {
         if (!$this->to_member && $this->to) {
             $email = EmailUtils::get_email_from_rfc_email($this->to);
-            $member = Member::get()->filter(array('Email' => $email))->first();
+            $member = Member::get()->filter(['Email' => $email])->first();
             if ($member) {
                 $this->setToMember($member);
             }
@@ -588,10 +666,10 @@ class BetterEmail extends Email
      * array('me@example.com' => 'My Name', 'other@example.com');
      *
      * @param string|array $address The message recipient(s) - if sending to multiple, use an array of address => name
-     * @param string|null $name The name of the recipient (if one)
-     * @return $this
+     * @param string $name The name of the recipient (if one)
+     * @return static
      */
-    public function setTo($address, $name = null)
+    public function setTo(string|array $address, string $name = ''): static
     {
         // Allow Name <my@email.com>
         if (!$name && is_string($address)) {
@@ -609,6 +687,7 @@ class BetterEmail extends Email
                 $this->to_member = null;
             }
         }
+        $this->to = $address;
         return parent::setTo($address, $name);
     }
 
@@ -616,9 +695,9 @@ class BetterEmail extends Email
 
     /**
      * @param string $subject The Subject line for the email
-     * @return $this
+     * @return static
      */
-    public function setSubject($subject)
+    public function setSubject(string $subject): static
     {
         // Do not allow changing subject if a template is set
         if ($this->emailTemplate && $this->getSubject()) {
@@ -634,10 +713,20 @@ class BetterEmail extends Email
      */
     public function setToAdmin()
     {
-        $admin = Security::findAnAdministrator();
+        $admin = DefaultAdminService::singleton()->findOrCreateDefaultAdmin();
         return $this->setToMember($admin);
     }
 
+    /**
+     * Wrapper to report proper SiteConfig type
+     *
+     * @return SiteConfig|EmailTemplateSiteConfigExtension
+     */
+    public function currentSiteConfig()
+    {
+        /** @var SiteConfig|EmailTemplateSiteConfigExtension */
+        return SiteConfig::current_site_config();
+    }
     /**
      * Set to
      *
@@ -645,7 +734,7 @@ class BetterEmail extends Email
      */
     public function setToContact()
     {
-        $email = SiteConfig::current_site_config()->EmailDefaultRecipient();
+        $email = $this->currentSiteConfig()->EmailDefaultRecipient();
         return $this->setTo($email);
     }
 
@@ -656,7 +745,7 @@ class BetterEmail extends Email
      */
     public function bccToAdmin()
     {
-        $admin = Security::findAnAdministrator();
+        $admin = DefaultAdminService::singleton()->findOrCreateDefaultAdmin();
         return $this->addBCC($admin->Email);
     }
 
@@ -667,7 +756,7 @@ class BetterEmail extends Email
      */
     public function bccToContact()
     {
-        $email = SiteConfig::current_site_config()->EmailDefaultRecipient();
+        $email = $this->currentSiteConfig()->EmailDefaultRecipient();
         return $this->addBCC($email);
     }
 
@@ -689,7 +778,7 @@ class BetterEmail extends Email
         }
         $this->to_member = $member;
 
-        $this->addData(array('Recipient' => $member));
+        $this->addData(['Recipient' => $member]);
 
         return $this->setTo($member->Email, $member->getTitle());
     }
@@ -703,7 +792,7 @@ class BetterEmail extends Email
     {
         if (!$this->from_member && $this->from) {
             $email = EmailUtils::get_email_from_rfc_email($this->from);
-            $member = Member::get()->filter(array('Email' => $email))->first();
+            $member = Member::get()->filter(['Email' => $email])->first();
             if ($member) {
                 $this->setFromMember($member);
             }
@@ -723,7 +812,7 @@ class BetterEmail extends Email
     {
         $this->from_member = $member;
 
-        $this->addData(array('Sender' => $member));
+        $this->addData(['Sender' => $member]);
 
         return $this->setFrom($member->Email, $member->getTitle());
     }
@@ -732,15 +821,16 @@ class BetterEmail extends Email
      * Improved set from that supports Name <my@domain.com> notation
      *
      * @param string|array $address
-     * @param string|null $name
-     * @return $this
+     * @param string $name
+     * @return static
      */
-    public function setFrom($address, $name = null)
+    public function setFrom(string|array $address, string $name = ''): static
     {
         if (!$name && is_string($address)) {
             $name = EmailUtils::get_displayname_from_rfc_email($address);
             $address = EmailUtils::get_email_from_rfc_email($address);
         }
+        $this->from = $address;
         return parent::setFrom($address, $name);
     }
 
@@ -763,23 +853,11 @@ class BetterEmail extends Email
                 return $url;
             }
 
-            $absUrl = Director::absoluteURL($url, $relativeToSiteBase);
+            $absUrl = Director::absoluteURL($url, $relativeToSiteBase ? Director::BASE : Director::ROOT);
         }
 
         // If we use subsite, absolute url may not use the proper url
-        if (SubsiteHelper::usesSubsite()) {
-            $subsite = SubsiteHelper::currentSubsite();
-            if ($subsite->hasMethod('getPrimarySubsiteDomain')) {
-                $domain = $subsite->getPrimarySubsiteDomain();
-                $link = $subsite->domain();
-                $protocol = $domain->getFullProtocol();
-            } else {
-                $protocol = Director::protocol();
-                $link = $subsite->domain();
-            }
-            $absUrl = preg_replace('/\/\/[^\/]+\//', '//' . $link . '/', $absUrl);
-            $absUrl = preg_replace('/http(s)?:\/\//', $protocol, $absUrl);
-        }
+        $absUrl = SubsiteHelper::safeAbsoluteURL($absUrl);
 
         return $absUrl;
     }
@@ -787,8 +865,11 @@ class BetterEmail extends Email
     /**
      * Turn all relative URLs in the content to absolute URLs
      */
-    protected static function rewriteURLs($html)
+    protected static function rewriteURLs(AbstractPart|string $html = null)
     {
+        if ($html instanceof AbstractPart) {
+            $html = $html->bodyToString();
+        }
         if (isset($_SERVER['REQUEST_URI'])) {
             $html = str_replace('$CurrentPageURL', $_SERVER['REQUEST_URI'], $html ?? '');
         }

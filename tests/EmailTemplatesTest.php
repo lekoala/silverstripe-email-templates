@@ -24,12 +24,12 @@ class EmailTemplatesTest extends SapphireTest
 {
     protected static $fixture_file = 'EmailTemplatesTest.yml';
 
-    protected function setUp()
+    protected function setUp(): void
     {
         parent::setUp();
     }
 
-    protected function tearDown()
+    protected function tearDown(): void
     {
         parent::tearDown();
     }

@@ -2,6 +2,9 @@
 
 namespace LeKoala\EmailTemplates\Helpers;
 
+use Symfony\Component\Mime\Address;
+use Symfony\Component\Mime\Part\TextPart;
+
 /**
  * Useful tools for emails
  */
@@ -10,11 +13,14 @@ class EmailUtils
     /**
      * Convert an html email to a text email while keeping formatting and links
      *
-     * @param string $content
+     * @param string|TextPart $content
      * @return string
      */
     public static function convert_html_to_text($content)
     {
+        if ($content instanceof TextPart) {
+            $content = $content->getBody();
+        }
         // Prevent double title
         $content = preg_replace('/<title>([\s\S]*)<\/title>/i', '', $content);
         // Prevent styles to be included
@@ -49,6 +55,10 @@ class EmailUtils
         }
         $arr = [];
         foreach ($emails as $address => $title) {
+            if ($title instanceof Address) {
+                $address = $title->getAddress();
+                $title = $title->getName();
+            }
             $line = "$address";
             if ($title) {
                 $line .= " <$title>";

@@ -2,9 +2,10 @@
 
 namespace LeKoala\EmailTemplates\Models;
 
-use LeKoala\Base\Actions\CustomAction;
+use LeKoala\CmsActions\CustomAction;
 use SilverStripe\Admin\AdminRootController;
 use LeKoala\EmailTemplates\Admin\EmailTemplatesAdmin;
+use LeKoala\EmailTemplates\Email\BetterEmail;
 use SilverStripe\Control\Director;
 use SilverStripe\Control\Email\Email;
 use SilverStripe\Forms\FieldList;
@@ -12,6 +13,7 @@ use SilverStripe\Forms\LiteralField;
 use SilverStripe\Forms\ReadonlyField;
 use SilverStripe\ORM\DB;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\Security\Member;
 use SilverStripe\Security\Permission;
 
 /**
@@ -24,14 +26,16 @@ use SilverStripe\Security\Permission;
  * @property string $Body
  * @property string $CC
  * @property string $BCC
- * @property string $Results
+ * @property string|null $Results
+ * @property string $ReplyTo
+ * @property string $Headers
  * @author lekoala
  */
 class SentEmail extends DataObject
 {
     private static $table_name = 'SentEmail';
 
-    private static $db = array(
+    private static $db = [
         'To' => 'Varchar(191)',
         'From' => 'Varchar(191)',
         'ReplyTo' => 'Varchar(191)',
@@ -41,13 +45,13 @@ class SentEmail extends DataObject
         'CC' => 'Text',
         'BCC' => 'Text',
         'Results' => 'Text',
-    );
-    private static $summary_fields = array(
+    ];
+    private static $summary_fields = [
         'Created.Nice' => 'Date',
         'To' => 'To',
         'Subject' => 'Subject',
         'IsSuccess' => 'Success',
-    );
+    ];
     private static $default_sort = 'Created DESC';
 
     /**
@@ -93,8 +97,8 @@ class SentEmail extends DataObject
         $f->push(ReadonlyField::create('Results'));
 
         $sanitisedModel =  str_replace('\\', '-', SentEmail::class);
-        $adminSegment = EmailTemplatesAdmin::config()->url_segment;
-        $adminBaseSegment = AdminRootController::config()->url_base;
+        $adminSegment = EmailTemplatesAdmin::config()->get('url_segment');
+        $adminBaseSegment = AdminRootController::config()->get('url_base');
         $iframeSrc = Director::baseURL() . $adminBaseSegment . '/' . $adminSegment . '/' . $sanitisedModel . '/ViewSentEmail/?id=' . $this->ID;
         $iframe = new LiteralField('iframe', '<iframe src="' . $iframeSrc . '" style="width:800px;background:#fff;border:1px solid #ccc;min-height:500px;vertical-align:top"></iframe>');
         $f->push($iframe);
@@ -118,6 +122,7 @@ class SentEmail extends DataObject
      */
     public function getEmail()
     {
+        /** @var BetterEmail */
         $email = Email::create();
 
         $email->setTo($this->To);
@@ -136,10 +141,10 @@ class SentEmail extends DataObject
     public function resend()
     {
         if ($e = $this->getEmail()) {
-            $results = $e->send();
+            $results = $e->doSend();
 
             // Update results
-            $this->Results = $results;
+            $this->Results = json_encode($results);
             $this->write();
 
             return 'Sent';
@@ -156,13 +161,13 @@ class SentEmail extends DataObject
      */
     public static function cleanup()
     {
-        $max = self::config()->max_records;
+        $max = self::config()->get('max_records');
         if ($max && self::get()->count() > $max) {
-            $method = self::config()->cleanup_method;
+            $method = self::config()->get('cleanup_method');
 
             // Delete all records older than cleanup_time (7 days by default)
             if ($method == 'time') {
-                $time = self::config()->cleanup_time;
+                $time = self::config()->get('cleanup_time');
                 $date = date('Y-m-d H:i:s', strtotime($time));
                 DB::query("DELETE FROM \"SentEmail\" WHERE Created < '$date'");
             }
