@@ -1,7 +1,7 @@
 SilverStripe Email Templates module
 ==================
 
-[![Build Status](https://travis-ci.org/lekoala/silverstripe-email-templates.svg?branch=master)](https://travis-ci.org/lekoala/silverstripe-email-templates/)
+![Build Status](https://github.com/lekoala/silverstripe-email-templates/actions/workflows/ci.yml/badge.svg)
 [![scrutinizer](https://scrutinizer-ci.com/g/lekoala/silverstripe-email-templates/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/lekoala/silverstripe-email-templates/)
 [![Code coverage](https://codecov.io/gh/lekoala/silverstripe-email-templates/branch/master/graph/badge.svg)](https://codecov.io/gh/lekoala/silverstripe-email-templates)
 
@@ -14,8 +14,6 @@ Features
 - Predefine content in ss templates for ease of use
 - Override framework or other module emails
 - Store sent emails for tracking
-- Compatible with Fluent module
-- Compatible Subsite module (TODO)
 - Emailing
 
 Predefined templates
@@ -29,6 +27,7 @@ To help you in this task, you have an ImportEmailTask thats imports all *.ss tem
 end with Email in the name, like /Email/MyTestEmail.ss.
 The content is imported in the "Content" area. You can also define divs with ids matching the name of the field:
 
+```html
     <div id="Subject">
         <%t MyTestEmail.SUBJECT "My translated title" %>
     </div>
@@ -38,21 +37,26 @@ The content is imported in the "Content" area. You can also define divs with ids
     <div id="Content">
         <%t MyTestEmail.CONTENT "My translated content" %>
     </div>
+```
 
 I recommend that you store the email title alongside the content of the email, it makes things much easier to follow.
 
 Also keep in mind that your content is escaped by default. So in your template you might need to do this:
 
+```html
     Hello $Member.Firstname,
 
     Here are your infos:
     $Member.SummaryTable.RAW
+```
 
 This will allow to render html content provided by the Member::SummaryTable method.
 
 Also watch for nasty ending dots, don't forget to escape if necessary
 
+```html
     Without this, {$It.Will.Crash}. <-- because of me
+```
 
 Available config flags:
 - import_framework: should we import base framework templates
@@ -138,9 +142,11 @@ For instance $Member will match an object of class Member.
 You can inject values with whatever name (MyMember => Member) but it won't be visible inside the admin because
 the template doesn't which values are going to be injected, except if you register your aliases in:
 
+```yml
     LeKoala\EmailTemplates\Models\EmailTemplate:
       default_models:
         MyMember: SilverStripe\Security\Member
+```
 
 Sent emails
 ==================
@@ -149,11 +155,13 @@ In the admin you can review sent emails
 
 Sent emails table is periodically cleaned up. You can configure the following
 
+```yml
     LeKoala\EmailTemplates\Models\SentEmail:
       max_records: 1000
       # possible values : 'time' or 'max'
       cleanup_method: 'max'
       cleanup_time: '-7 days'
+```
 
 Emailings
 ==================
@@ -163,6 +171,7 @@ emails to your members or selection of members.
 
 If you want to add new group, add an extension to Emailing class and implement the following extension points
 
+```php
     /**
      * @param array $groups
      * @param array $locales
@@ -181,33 +190,42 @@ If you want to add new group, add an extension to Emailing class and implement t
     public function updateGetAllRecipients(&$list, $locales, $recipients)
     {
     }
+```
 
 Merge vars:
 This module supports merge vars using *|MERGETAG|* notation in Emailings
 It expects your email gateway to support the X-MC-MergeVars convention.
 You can change the email header being used.
 
+```yml
     LeKoala\EmailTemplates\Models\Emailing:
       mail_merge_header: 'X-Mail-Header-Here'
+```
 
 By default, we use the mandrill template syntax replacement. If you use other
 gateways you may need to replace them. For example, mailgun would be this:
 
+```yml
     LeKoala\EmailTemplates\Models\Emailing:
       mail_merge_syntax: '%recipient.MERGETAG%'
+```
 
 Batch sending:
 By default, this module will send emails in batch of 1000. You can change this with
 
+```yml
     LeKoala\EmailTemplates\Models\Emailing:
       batch_count: 100
+```
 
 Sending as bcc:
 By default, this module send email as bcc in order to avoid displaying
 recipients. You can set this behaviour to false if needed.
 
+```yml
     LeKoala\EmailTemplates\Models\Emailing:
       send_bcc: false
+```
 
 Finding a good template
 ==================
@@ -228,10 +246,17 @@ Check my modules
 - [Sparkpost](https://github.com/lekoala/silverstripe-sparkpost)
 - [Mailgun](https://github.com/lekoala/silverstripe-mailgun)
 
+TODO
+==================
+
+- Compatible with Fluent module
+- Compatible Subsite module
+
 Compatibility
 ==================
-Tested with 4.4 but should work on any 4.x
+Tested with 5.x
 
+For 4.x, use branch 2
 For 3.x, use branch 1
 
 Maintainer
