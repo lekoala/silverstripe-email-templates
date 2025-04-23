@@ -12,6 +12,7 @@ parameters:
         - '#Static property [a-zA-Z0-9\\_]+::\$menu_icon is never read, only written\.#'
         - '#Static property [a-zA-Z0-9\\_]+::\$allowed_actions is never read, only written\.#'
         - '#Static property [a-zA-Z0-9\\_]+::\$has_one is never read, only written\.#'
+        - '#Static property [a-zA-Z0-9\\_]+::\$compress_body is never read, only written\.#'
         - '#TractorCow\\Fluent\\Model\\Locale#'
         - '#SilverStripe\\Subsites\\Model\\Subsite#'
     parallel:

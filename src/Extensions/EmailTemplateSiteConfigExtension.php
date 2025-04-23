@@ -18,9 +18,9 @@ use SilverStripe\Forms\HTMLEditor\HTMLEditorField;
  * @property string $EmailFooter
  * @property string $DefaultFromEmail
  * @property string $ContactEmail
- * 
+ *
  * @property-read SiteConfig&EmailTemplateSiteConfigExtension $owner
- * 
+ *
  * @author Kalyptus SPRL <thomas@kalyptus.be>
  */
 class EmailTemplateSiteConfigExtension extends DataExtension

@@ -52,7 +52,40 @@ class SentEmail extends DataObject
         'Subject' => 'Subject',
         'IsSuccess' => 'Success',
     ];
+
     private static $default_sort = 'Created DESC';
+
+    private static $compress_body = false;
+
+    public function setBody(string $v)
+    {
+        if ($this->config()->get('compress_body') && function_exists('gzdeflate')) {
+            $compressed = self::COMPRESSED_SIGNATURE . base64_encode(gzdeflate($v, 9)); // Use maximum compression level
+            if ($compressed !== false) {
+                $this->record['Body'] = $compressed;
+                return;
+            }
+        }
+        $this->record['Body'] = $v;
+    }
+
+    const COMPRESSED_SIGNATURE = 'base64/deflate:';
+    public function getBody(): string
+    {
+        $body = $this->record['Body'];
+
+        if (substr($body, 0, strlen(self::COMPRESSED_SIGNATURE)) == self::COMPRESSED_SIGNATURE) {
+            if (!function_exists('gzinflate')) {
+                return 'This email body is compressed with zlib. Please install zlib module to see it.';
+            }
+            $raw = base64_decode(substr($body, strlen(self::COMPRESSED_SIGNATURE)));
+            if ($raw !== false) {
+                return gzinflate($raw);
+            }
+        }
+
+        return $body;
+    }
 
     /**
      * Gets a list of actions for the ModelAdmin interface
